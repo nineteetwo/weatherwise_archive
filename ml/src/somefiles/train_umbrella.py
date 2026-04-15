@@ -2,11 +2,6 @@
 train_umbrella.py
 -----------------
 Şemsiye gerekliliği (umbrella_needed) ikili sınıflandırma modeli.
-
-Düzeltmeler:
-  1. Feature Engineering: weather_condition, climate_zone gibi kategorik sütunlar
-     otomatik algılanıp OneHotEncoder ile modele ekleniyor.
-  2. Data Leakage: Rastgele split YOK. Tarihe göre 70/15/15 temporal split uygulandı.
 """
 
 import json
@@ -14,12 +9,12 @@ from pathlib import Path
 
 import joblib
 import pandas as pd
-from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.impute import SimpleImputer
 from sklearn.metrics import classification_report, f1_score
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import OneHotEncoder
+
+# Ortak fonksiyonları içeri aktar
+from base_trainer import load_and_prep_data, temporal_split, build_preprocessor
 
 DATA_PATH = "ml/data/raw/hourly_observations.csv"
 MODEL_PATH = "ml/trained_models/umbrella_model.pkl"
@@ -29,7 +24,8 @@ METRICS_PATH = "ml/trained_models/umbrella_metrics.json"
 TARGET = "umbrella_needed"
 RANDOM_STATE = 42
 
-# ID / metin / diğer hedef sütunlar — özellik olarak kullanılmaz.
+# timestamp artık extract_time_features tarafından işlenecek, burada droplayabiliriz.
+# hour, month, dayofweek özellikleri otomatik olarak X'e dahil olacaktır.
 DROP_COLUMNS = [
     "obs_id",
     "timestamp",
@@ -41,31 +37,12 @@ DROP_COLUMNS = [
     TARGET,
 ]
 
-
-def _build_preprocessor(
-    num_cols: list[str], cat_cols: list[str]
-) -> ColumnTransformer:
-    """Sayısal + kategorik sütunlar için ayrı pipeline döner."""
-    num_pipe = Pipeline([
-        ("imputer", SimpleImputer(strategy="median")),
-    ])
-    cat_pipe = Pipeline([
-        ("imputer", SimpleImputer(strategy="most_frequent")),
-        # handle_unknown="ignore" → eğitimde görülmeyen kategoriler sıfır vektörü alır
-        ("onehot", OneHotEncoder(handle_unknown="ignore", sparse_output=False)),
-    ])
-    return ColumnTransformer(
-        transformers=[
-            ("num", num_pipe, num_cols),
-            ("cat", cat_pipe, cat_cols),
-        ],
-        remainder="drop",
-    )
+# NOT: Hiperparametreler (n_estimators=600 vb.) sabit bırakılmıştır.
+# Zaman serisi temporal split kullanıldığı için standart CrossValidation (CV) yapılamaz.
+# İleri seviyede TimeSeriesSplit ile arama yapılabilir ancak mevcut RF ayarları güçlü bir baseline sunar.
 
 
-def _choose_best_threshold(
-    y_true: pd.Series, probas: pd.Series
-) -> tuple[float, float]:
+def _choose_best_threshold(y_true: pd.Series, probas: pd.Series) -> tuple[float, float]:
     """Dev seti üzerinde F1'i maksimize eden karar eşiğini bulur."""
     best_thr, best_f1 = 0.50, -1.0
     for step in range(5, 96):
@@ -77,35 +54,13 @@ def _choose_best_threshold(
     return best_thr, best_f1
 
 
-def _temporal_split(
-    df: pd.DataFrame,
-) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    """
-    Zaman damgasına göre 70 / 15 / 15 bölme.
-    Veri sızıntısını önler: model hiçbir zaman 'geleceği' görmez.
-    """
-    n = len(df)
-    train_end = int(n * 0.70)
-    dev_end = int(n * 0.85)
-    if train_end == 0 or dev_end <= train_end or dev_end >= n:
-        raise ValueError("Veri seti 70/15/15 temporal bölme için çok küçük.")
-    return df.iloc[:train_end], df.iloc[train_end:dev_end], df.iloc[dev_end:]
-
-
 def run() -> dict:
     """Modeli eğitir, kaydeder ve metrik sözlüğü döner."""
-    df = pd.read_csv(DATA_PATH)
-    if TARGET not in df.columns:
-        raise ValueError(f"Hedef sütun '{TARGET}' bulunamadı: {DATA_PATH}")
+    # 1. Veri Yükleme ve Temizleme (Artık base_trainer'da)
+    df = load_and_prep_data(DATA_PATH, TARGET)
 
-    df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
-    df = (
-        df.dropna(subset=["timestamp", TARGET])
-        .sort_values("timestamp")
-        .reset_index(drop=True)
-    )
-
-    df_train, df_dev, df_test = _temporal_split(df)
+    # 2. Temporal Split
+    df_train, df_dev, df_test = temporal_split(df)
 
     def split_xy(frame: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]:
         x = frame.drop(columns=[c for c in DROP_COLUMNS if c in frame.columns])
@@ -116,8 +71,7 @@ def run() -> dict:
     x_dev, y_dev = split_xy(df_dev)
     x_test, y_test = split_xy(df_test)
 
-    # --- Feature Engineering ---
-    # Kategorik sütunlar otomatik algılanır (weather_condition, climate_zone vb.)
+    # 3. Feature Engineering (Otomatik algılama)
     cat_cols: list[str] = x_train.select_dtypes(
         include=["object", "string", "category"]
     ).columns.tolist()
@@ -126,7 +80,8 @@ def run() -> dict:
     print(f"  [Umbrella] Sayısal özellikler ({len(num_cols)}): {num_cols}")
     print(f"  [Umbrella] Kategorik özellikler ({len(cat_cols)}): {cat_cols}")
 
-    preprocessor = _build_preprocessor(num_cols, cat_cols)
+    # 4. Pipeline Kurulumu
+    preprocessor = build_preprocessor(num_cols, cat_cols)
     clf = Pipeline([
         ("preprocess", preprocessor),
         ("model", RandomForestClassifier(
@@ -141,11 +96,10 @@ def run() -> dict:
 
     clf.fit(x_train, y_train)
 
-    # Dev seti → eşik ayarı
+    # 5. Eşik (Threshold) Ayarı ve Test Değerlendirmesi
     dev_probas = pd.Series(clf.predict_proba(x_dev)[:, 1])
     best_thr, best_dev_f1 = _choose_best_threshold(y_dev, dev_probas)
 
-    # Test seti → nihai değerlendirme
     test_probas = clf.predict_proba(x_test)[:, 1]
     test_preds = (test_probas >= best_thr).astype(int)
     test_f1 = f1_score(y_test, test_preds, zero_division=0)
@@ -154,7 +108,7 @@ def run() -> dict:
     print(f"  [Umbrella] Test F1: {test_f1:.4f}")
     print(classification_report(y_test, test_preds, zero_division=0))
 
-    # Son artifact: train + dev üzerinde yeniden eğitim
+    # 6. Son Artifact: Train + Dev üzerinde yeniden eğitim
     x_td = pd.concat([x_train, x_dev], ignore_index=True)
     y_td = pd.concat([y_train, y_dev], ignore_index=True)
     clf.fit(x_td, y_td)
