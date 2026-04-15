@@ -1,53 +1,12 @@
-# Environment and secrets
 .env
-.env.*
-!.env.example
-*.pem
-
-# OS
-.DS_Store
-Thumbs.db
-Desktop.ini
-
-# Editors / IDEs
-.idea/
-.vscode/
-*.swp
-*.swo
-*~
-
-# Logs and temp
-*.log
-logs/
-tmp/
-temp/
-.cache/
-
-# Dependencies (common stacks — trim when stack is chosen)
-node_modules/
-vendor/
-.venv/
-venv/
 __pycache__/
-*.py[cod]
-.Python
-*.egg-info/
-.eggs/
-dist/
-build/
-*.egg
-
-# Test / coverage
-coverage/
-.coverage
-htmlcov/
-.pytest_cache/
-.nyc_output/
-
-# Docker (optional local overrides)
-docker-compose.override.yml
-
-# Build outputs
-.next/
-out/
-.turbo/
+*.pkl
+*.pyc
+node_modules/
+.DS_Store
+venv/
+.venv/
+ml/data/*
+ml/trained_models/*
+!ml/data/.gitkeep
+!ml/trained_models/.gitkeep
