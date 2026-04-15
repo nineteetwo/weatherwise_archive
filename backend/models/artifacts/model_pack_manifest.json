@@ -1,0 +1,22 @@
+{
+  "source_directory": "ml/trained_models",
+  "runtime_directory": "backend/models/artifacts",
+  "required_runtime_files": {
+    "models": [
+      "umbrella_model.pkl",
+      "clothing_model.pkl",
+      "suitability_model.pkl"
+    ],
+    "schemas": [
+      "umbrella_feature_schema.json",
+      "clothing_feature_schema.json",
+      "suitability_feature_schema.json"
+    ]
+  },
+  "integration_order": [
+    "Load all three schema JSON files first",
+    "Validate normalized feature payload shape/order against schema",
+    "Load corresponding .pkl model with joblib",
+    "Run inference and map structured outputs to API response"
+  ]
+}
