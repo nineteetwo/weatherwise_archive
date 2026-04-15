@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PhanarAi - Test Environment</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@1&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+</head>
+<body class="time-night weather-clear">
+    
+    <div id="sky-gradient"></div>
+    <div id="clouds-layer"></div>
+    <div id="fog-layer"></div>
+    <canvas id="weather-canvas"></canvas>
+    <div id="lightning-layer"></div>
+
+    <nav class="navbar">
+        <div class="nav-left">
+            <span class="logo-font nav-logo" onclick="window.location.href='index.html'" style="cursor: pointer;">PhanarAi</span>
+        </div>
+        <button class="hamburger-btn" id="hamburger-btn">
+            <span class="material-symbols-outlined">menu</span>
+        </button>
+        <div class="nav-right" id="nav-right">
+            <button class="glass-btn" id="create-img-btn">
+                <span class="material-symbols-outlined">image</span>
+                <span id="txt-create-image">Create Image</span>
+            </button>
+            <select class="glass-btn" id="lang-select">
+                <option value="en">EN</option>
+                <option value="tr">TR</option>
+                <option value="ru">RU</option>
+            </select>
+            <button class="glass-btn login-btn" id="nav-login" onclick="window.location.href='login.html'">Sign in</button>
+            <button class="glass-btn signup-btn" id="nav-signup" onclick="window.location.href='signup.html'">Sign up</button>
+        </div>
+    </nav>
+
+    <main class="center-content">
+        <h1 class="logo-font main-logo">PhanarAi</h1>
+        
+        <div class="weather-widget">
+            <span class="material-symbols-outlined" id="weather-icon">clear_night</span>
+            <span id="location-text">Adana</span>
+            <span class="dot-separator">•</span>
+            <span id="time-text">--:--</span>
+            <span class="dot-separator">•</span>
+            <span id="temp-text">22°C</span>
+        </div>
+        
+        <div class="search-container glass-panel">
+            <input type="text" id="search-input" placeholder="How can I help you today?">
+            <div class="search-actions">
+                <span class="material-symbols-outlined icon-btn enter-btn">arrow_upward</span>
+            </div>
+        </div>
+    </main>
+
+    <div class="dev-menu glass-panel">
+        <label style="font-size: 12px; opacity: 0.8;">Atmosphere Test</label>
+        <select id="dev-time">
+            <option value="sunrise">🌅 Sunrise</option>
+            <option value="morning">☀️ Morning</option>
+            <option value="noon">🌞 Noon</option>
+            <option value="sunset">🌇 Sunset</option>
+            <option value="evening">🌆 Evening</option>
+            <option value="night" selected>🌙 Night</option>
+        </select>
+        <select id="dev-weather">
+            <option value="clear" selected>Clear / Starry</option>
+            <option value="clouds">Cloudy</option>
+            <option value="rain">Rainy</option>
+            <option value="heavy-rain">Heavy Rain</option>
+            <option value="snow">Snowy</option>
+            <option value="thunder">Thunderstorm</option>
+            <option value="fog">Foggy</option>
+        </select>
+    </div>
+
+    <script src="weather.js"></script>
+    <script src="main.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const devTime = document.getElementById('dev-time');
+            const devWeather = document.getElementById('dev-weather');
+
+            setTimeout(() => {
+                applyDevSettings();
+            }, 150);
+
+            devTime.addEventListener('change', applyDevSettings);
+            devWeather.addEventListener('change', applyDevSettings);
+
+            function applyDevSettings() {
+                const time = devTime.value;
+                const weather = devWeather.value;
+
+                document.body.className = `time-${time} weather-${weather}`;
+
+                if (window.setWeatherEffect) {
+                    window.setWeatherEffect(weather);
+                }
+
+                const icon = document.getElementById('weather-icon');
+                if (icon) {
+                    let name = 'clear_day';
+                    if (weather === 'clear') name = (time === 'night' || time === 'evening') ? 'clear_night' : 'clear_day';
+                    else if (weather === 'clouds') name = 'cloud';
+                    else if (weather === 'rain') name = 'rainy';
+                    else if (weather === 'heavy-rain') name = 'storm';
+                    else if (weather === 'snow') name = 'snowing';
+                    else if (weather === 'thunder') name = 'thunderstorm';
+                    else if (weather === 'fog') name = 'foggy';
+                    icon.textContent = name;
+                }
+            }
+        });
+    </script>
+</body>
+</html>
