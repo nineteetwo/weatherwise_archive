@@ -1,25 +1,13 @@
-"""
-train_umbrella.py
------------------
-Şemsiye gerekliliği (umbrella_needed) ikili sınıflandırma modeli.
-
-Düzeltmeler:
-  1. Feature Engineering: weather_condition, climate_zone gibi kategorik sütunlar
-     otomatik algılanıp OneHotEncoder ile modele ekleniyor.
-  2. Data Leakage: Rastgele split YOK. Tarihe göre 70/15/15 temporal split uygulandı.
-"""
-
 import json
 from pathlib import Path
 
 import joblib
 import pandas as pd
-from sklearn.compose import ColumnTransformer
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.impute import SimpleImputer
 from sklearn.metrics import classification_report, f1_score
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import OneHotEncoder
+
+from base_trainer import build_preprocessor, load_training_data, temporal_split
 
 DATA_PATH = "ml/data/raw/hourly_observations.csv"
 MODEL_PATH = "ml/trained_models/umbrella_model.pkl"
@@ -29,7 +17,7 @@ METRICS_PATH = "ml/trained_models/umbrella_metrics.json"
 TARGET = "umbrella_needed"
 RANDOM_STATE = 42
 
-# ID / metin / diğer hedef sütunlar — özellik olarak kullanılmaz.
+# These columns are either IDs/text or post-processed targets that should not be features.
 DROP_COLUMNS = [
     "obs_id",
     "timestamp",
@@ -42,70 +30,22 @@ DROP_COLUMNS = [
 ]
 
 
-def _build_preprocessor(
-    num_cols: list[str], cat_cols: list[str]
-) -> ColumnTransformer:
-    """Sayısal + kategorik sütunlar için ayrı pipeline döner."""
-    num_pipe = Pipeline([
-        ("imputer", SimpleImputer(strategy="median")),
-    ])
-    cat_pipe = Pipeline([
-        ("imputer", SimpleImputer(strategy="most_frequent")),
-        # handle_unknown="ignore" → eğitimde görülmeyen kategoriler sıfır vektörü alır
-        ("onehot", OneHotEncoder(handle_unknown="ignore", sparse_output=False)),
-    ])
-    return ColumnTransformer(
-        transformers=[
-            ("num", num_pipe, num_cols),
-            ("cat", cat_pipe, cat_cols),
-        ],
-        remainder="drop",
-    )
-
-
-def _choose_best_threshold(
-    y_true: pd.Series, probas: pd.Series
-) -> tuple[float, float]:
-    """Dev seti üzerinde F1'i maksimize eden karar eşiğini bulur."""
-    best_thr, best_f1 = 0.50, -1.0
-    for step in range(5, 96):
-        thr = step / 100
-        preds = (probas >= thr).astype(int)
-        score = f1_score(y_true, preds, zero_division=0)
+def choose_best_threshold(y_true: pd.Series, probas: pd.Series) -> tuple[float, float]:
+    best_threshold = 0.50
+    best_f1 = -1.0
+    for step in range(5, 96):  # 0.05 -> 0.95
+        threshold = step / 100
+        preds = (probas >= threshold).astype(int)
+        score = f1_score(y_true, preds)
         if score > best_f1:
-            best_f1, best_thr = score, thr
-    return best_thr, best_f1
+            best_f1 = score
+            best_threshold = threshold
+    return best_threshold, best_f1
 
 
-def _temporal_split(
-    df: pd.DataFrame,
-) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    """
-    Zaman damgasına göre 70 / 15 / 15 bölme.
-    Veri sızıntısını önler: model hiçbir zaman 'geleceği' görmez.
-    """
-    n = len(df)
-    train_end = int(n * 0.70)
-    dev_end = int(n * 0.85)
-    if train_end == 0 or dev_end <= train_end or dev_end >= n:
-        raise ValueError("Veri seti 70/15/15 temporal bölme için çok küçük.")
-    return df.iloc[:train_end], df.iloc[train_end:dev_end], df.iloc[dev_end:]
-
-
-def run() -> dict:
-    """Modeli eğitir, kaydeder ve metrik sözlüğü döner."""
-    df = pd.read_csv(DATA_PATH)
-    if TARGET not in df.columns:
-        raise ValueError(f"Hedef sütun '{TARGET}' bulunamadı: {DATA_PATH}")
-
-    df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
-    df = (
-        df.dropna(subset=["timestamp", TARGET])
-        .sort_values("timestamp")
-        .reset_index(drop=True)
-    )
-
-    df_train, df_dev, df_test = _temporal_split(df)
+def main() -> None:
+    df = load_training_data(DATA_PATH, TARGET, target_kind="classification")
+    df_train, df_dev, df_test = temporal_split(df)
 
     def split_xy(frame: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]:
         x = frame.drop(columns=[c for c in DROP_COLUMNS if c in frame.columns])
@@ -116,79 +56,78 @@ def run() -> dict:
     x_dev, y_dev = split_xy(df_dev)
     x_test, y_test = split_xy(df_test)
 
-    # --- Feature Engineering ---
-    # Kategorik sütunlar otomatik algılanır (weather_condition, climate_zone vb.)
-    cat_cols: list[str] = x_train.select_dtypes(
-        include=["object", "string", "category"]
-    ).columns.tolist()
-    num_cols: list[str] = [c for c in x_train.columns if c not in cat_cols]
+    cat_cols = x_train.select_dtypes(include=["object", "string"]).columns.tolist()
+    num_cols = [c for c in x_train.columns if c not in cat_cols]
 
-    print(f"  [Umbrella] Sayısal özellikler ({len(num_cols)}): {num_cols}")
-    print(f"  [Umbrella] Kategorik özellikler ({len(cat_cols)}): {cat_cols}")
+    preprocess = build_preprocessor(num_cols, cat_cols)
 
-    preprocessor = _build_preprocessor(num_cols, cat_cols)
-    clf = Pipeline([
-        ("preprocess", preprocessor),
-        ("model", RandomForestClassifier(
-            n_estimators=600,
-            max_depth=None,
-            min_samples_leaf=1,
-            class_weight="balanced_subsample",
-            random_state=RANDOM_STATE,
-            n_jobs=-1,
-        )),
-    ])
+    clf = Pipeline(
+        [
+            ("preprocess", preprocess),
+            (
+                "model",
+                RandomForestClassifier(
+                    n_estimators=600,
+                    max_depth=None,
+                    min_samples_leaf=1,
+                    random_state=RANDOM_STATE,
+                    n_jobs=-1,
+                    class_weight="balanced_subsample",
+                ),
+            ),
+        ]
+    )
 
     clf.fit(x_train, y_train)
 
-    # Dev seti → eşik ayarı
-    dev_probas = pd.Series(clf.predict_proba(x_dev)[:, 1])
-    best_thr, best_dev_f1 = _choose_best_threshold(y_dev, dev_probas)
+    dev_probas = clf.predict_proba(x_dev)[:, 1]
+    best_threshold, best_dev_f1 = choose_best_threshold(y_dev, pd.Series(dev_probas))
 
-    # Test seti → nihai değerlendirme
     test_probas = clf.predict_proba(x_test)[:, 1]
-    test_preds = (test_probas >= best_thr).astype(int)
-    test_f1 = f1_score(y_test, test_preds, zero_division=0)
+    test_preds = (test_probas >= best_threshold).astype(int)
+    test_f1 = f1_score(y_test, test_preds)
 
-    print(f"  [Umbrella] Dev F1 (en iyi): {best_dev_f1:.4f}  (eşik={best_thr:.2f})")
-    print(f"  [Umbrella] Test F1: {test_f1:.4f}")
-    print(classification_report(y_test, test_preds, zero_division=0))
+    print(f"Umbrella Dev F1 (best): {best_dev_f1:.4f} @ threshold={best_threshold:.2f}")
+    print(f"Umbrella Test F1: {test_f1:.4f}")
+    print("Test classification report:")
+    print(classification_report(y_test, test_preds))
 
-    # Son artifact: train + dev üzerinde yeniden eğitim
-    x_td = pd.concat([x_train, x_dev], ignore_index=True)
-    y_td = pd.concat([y_train, y_dev], ignore_index=True)
-    clf.fit(x_td, y_td)
-
-    Path("ml/trained_models").mkdir(parents=True, exist_ok=True)
+    # Refit on train+dev with tuned threshold for final artifact.
+    x_train_dev = pd.concat([x_train, x_dev], ignore_index=True)
+    y_train_dev = pd.concat([y_train, y_dev], ignore_index=True)
+    clf.fit(x_train_dev, y_train_dev)
     joblib.dump(clf, MODEL_PATH)
 
+    Path("ml/trained_models").mkdir(parents=True, exist_ok=True)
     schema = {
         "target": TARGET,
         "features": x_train.columns.tolist(),
-        "numeric_features": num_cols,
         "categorical_features": cat_cols,
-        "decision_threshold": best_thr,
+        "numeric_features": num_cols,
+        "decision_threshold": best_threshold,
         "split_strategy": "temporal_70_15_15",
     }
     with open(SCHEMA_PATH, "w", encoding="utf-8") as f:
-        json.dump(schema, f, indent=2, ensure_ascii=False)
+        json.dump(schema, f, indent=2)
 
     metrics = {
         "dev_f1_best": best_dev_f1,
         "test_f1": test_f1,
-        "decision_threshold": best_thr,
-        "rows_train": len(df_train),
-        "rows_dev": len(df_dev),
-        "rows_test": len(df_test),
-        "positive_rate_train": float(y_train.mean()),
-        "positive_rate_test": float(y_test.mean()),
+        "decision_threshold": best_threshold,
+        "rows_train": int(len(df_train)),
+        "rows_dev": int(len(df_dev)),
+        "rows_test": int(len(df_test)),
+        "target_positive_rate_train": float(y_train.mean()),
+        "target_positive_rate_dev": float(y_dev.mean()),
+        "target_positive_rate_test": float(y_test.mean()),
     }
     with open(METRICS_PATH, "w", encoding="utf-8") as f:
-        json.dump(metrics, f, indent=2, ensure_ascii=False)
+        json.dump(metrics, f, indent=2)
 
-    print(f"  [Umbrella] Model → {MODEL_PATH}")
-    return metrics
+    print(f"Saved model -> {MODEL_PATH}")
+    print(f"Saved schema -> {SCHEMA_PATH}")
+    print(f"Saved metrics -> {METRICS_PATH}")
 
 
 if __name__ == "__main__":
-    run()
+    main()
