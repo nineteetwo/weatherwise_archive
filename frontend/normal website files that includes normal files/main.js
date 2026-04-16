@@ -1,132 +1,206 @@
 document.addEventListener('DOMContentLoaded', () => {
+   
     const translations = {
         en: { 
-            placeholder: "How can I help you today?", privacy: "Privacy Policy", cookie: "Cookie Policy", createImage: "Create Image",
-            navLogin: "Sign in", navSignup: "Sign up", authTitleIn: "Sign in", authTitleUp: "Sign up",
-            nameLabel: "Full Name", emailLabel: "Email Address", passLabel: "Password",
-            noAccount: "Don't have an account?", hasAccount: "Already have an account?"
+            placeholder: "How can I help you today?", privacy: "Privacy Policy", 
+            cookie: "Cookie Policy", createImage: "Create Image",
+            navLogin: "Sign in", navSignup: "Sign up"
         },
         tr: { 
-            placeholder: "Bugün size nasıl yardımcı olabilirim?", privacy: "Gizlilik Politikası", cookie: "Çerez Politikası", createImage: "Görsel Oluştur",
-            navLogin: "Giriş Yap", navSignup: "Kayıt Ol", authTitleIn: "Giriş Yap", authTitleUp: "Kayıt Ol",
-            nameLabel: "Ad Soyad", emailLabel: "E-posta Adresi", passLabel: "Şifre",
-            noAccount: "Hesabın yok mu?", hasAccount: "Zaten hesabın var mı?"
+            placeholder: "Bugün size nasıl yardımcı olabilirim?", privacy: "Gizlilik Politikası", 
+            cookie: "Çerez Politikası", createImage: "Görsel Oluştur",
+            navLogin: "Giriş Yap", navSignup: "Kayıt Ol"
         },
         ru: { 
-            placeholder: "Чем я могу вам помочь сегодня?", privacy: "Политика конфиденциальности", cookie: "Файлы cookie", createImage: "Создать изобр.",
-            navLogin: "Войти", navSignup: "Регистрация", authTitleIn: "Вход", authTitleUp: "Регистрация",
-            nameLabel: "Полное имя", emailLabel: "Адрес эл. почты", passLabel: "Пароль",
-            noAccount: "Нет аккаунта?", hasAccount: "Уже есть аккаунт?"
+            placeholder: "Чем я могу вам помочь сегодня?", privacy: "Политика конфиденциальности", 
+            cookie: "Файлы cookie", createImage: "Создать изобр.",
+            navLogin: "Войти", navSignup: "Регистрация"
         }
     };
 
-    const langSelect = document.getElementById('lang-select');
-    const searchInput = document.getElementById('search-input');
-    const txtPrivacy = document.getElementById('txt-privacy');
-    const txtCookie = document.getElementById('txt-cookie');
-    const txtCreateImage = document.getElementById('txt-create-image');
-    const navLogin = document.getElementById('nav-login');
-    const navSignup = document.getElementById('nav-signup');
-    const authTitleIn = document.getElementById('txt-auth-title');
-    const authTitleUp = document.getElementById('txt-auth-title-up');
-    const nameLabel = document.getElementById('txt-name-label');
-    const emailLabel = document.getElementById('txt-email-label');
-    const passLabel = document.getElementById('txt-pass-label');
-    const btnSubmitLogin = document.getElementById('btn-submit-login');
-    const btnSubmitSignup = document.getElementById('btn-submit-signup');
-    const txtNoAccount = document.getElementById('txt-no-account');
-    const txtHasAccount = document.getElementById('txt-has-account');
-    const linkSignup = document.getElementById('link-signup');
-    const linkSignin = document.getElementById('link-signin');
-    const hamburgerBtn = document.getElementById('hamburger-btn');
-    const navRight = document.getElementById('nav-right');
+    const langSelect    = document.getElementById('lang-select');
+    const searchInput   = document.getElementById('search-input');
+    const txtPrivacy    = document.getElementById('txt-privacy');
+    const txtCookie     = document.getElementById('txt-cookie');
+    const txtCreateImage= document.getElementById('txt-create-image');
+    const navLogin      = document.getElementById('nav-login');
+    const navSignup     = document.getElementById('nav-signup');
+    const hamburgerBtn  = document.getElementById('hamburger-btn');
+    const navRight      = document.getElementById('nav-right');
 
     if (hamburgerBtn && navRight) {
         hamburgerBtn.addEventListener('click', () => {
             navRight.classList.toggle('active');
-            const icon = hamburgerBtn.querySelector('span');
-            if (navRight.classList.contains('active')) {
-                icon.textContent = 'close';
-            } else {
-                icon.textContent = 'menu';
-            }
+            hamburgerBtn.querySelector('span').textContent = 
+                navRight.classList.contains('active') ? 'close' : 'menu';
         });
     }
 
     function applyTranslation(lang) {
         const t = translations[lang];
         if (!t) return;
-        if (searchInput) searchInput.placeholder = t.placeholder;
-        if (txtPrivacy) txtPrivacy.textContent = t.privacy;
-        if (txtCookie) txtCookie.textContent = t.cookie;
-        if (txtCreateImage) txtCreateImage.textContent = t.createImage;
-        if (navLogin) navLogin.textContent = t.navLogin;
-        if (navSignup) navSignup.textContent = t.navSignup;
-        if (authTitleIn) authTitleIn.textContent = t.authTitleIn;
-        if (authTitleUp) authTitleUp.textContent = t.authTitleUp;
-        if (nameLabel) nameLabel.textContent = t.nameLabel;
-        if (emailLabel) emailLabel.textContent = t.emailLabel;
-        if (passLabel) passLabel.textContent = t.passLabel;
-        if (btnSubmitLogin) btnSubmitLogin.textContent = t.authTitleIn;
-        if (btnSubmitSignup) btnSubmitSignup.textContent = t.authTitleUp;
-        if (txtNoAccount) txtNoAccount.textContent = t.noAccount;
-        if (txtHasAccount) txtHasAccount.textContent = t.hasAccount;
-        if (linkSignup) linkSignup.textContent = t.navSignup;
-        if (linkSignin) linkSignin.textContent = t.navLogin;
+        if (searchInput)     searchInput.placeholder = t.placeholder;
+        if (txtPrivacy)      txtPrivacy.textContent  = t.privacy;
+        if (txtCookie)       txtCookie.textContent   = t.cookie;
+        if (txtCreateImage)  txtCreateImage.textContent = t.createImage;
+        if (navLogin)        navLogin.textContent    = t.navLogin;
+        if (navSignup)       navSignup.textContent   = t.navSignup;
     }
 
-    langSelect.addEventListener('change', (e) => applyTranslation(e.target.value));
-
-    const browserLang = (navigator.language || navigator.userLanguage).substring(0, 2);
-    if (translations[browserLang]) {
-        langSelect.value = browserLang;
-    } else {
-        langSelect.value = 'en';
+    if (langSelect) {
+        langSelect.addEventListener('change', e => applyTranslation(e.target.value));
+        const bl = (navigator.language || 'en').substring(0, 2);
+        langSelect.value = translations[bl] ? bl : 'en';
+        applyTranslation(langSelect.value);
     }
-    applyTranslation(langSelect.value);
 
-    const weatherIconElement = document.getElementById('weather-icon');
-    const timeTextElement = document.getElementById('time-text');
+   
+    const weatherIconEl = document.getElementById('weather-icon');
+    const timeTextEl    = document.getElementById('time-text');
+    const locationText  = document.getElementById('location-text');
+    const tempText      = document.getElementById('temp-text');
+    const enterBtn      = document.querySelector('.enter-btn');
+    const aiResultsCard = document.getElementById('ai-results');
 
-    function updateClock() {
-        if (!timeTextElement) return; 
-        const now = new Date();
-        timeTextElement.textContent = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    }
-    
-    updateClock();
-    setInterval(updateClock, 1000);
+    let currentCityOffset = null;   // seconds
 
-    function getSystemTimeOfDay() {
-        const h = new Date().getHours();
-        if (h >= 6 && h < 8) return 'sunrise';
-        if (h >= 8 && h < 12) return 'morning';
+    const WEATHER_ICONS = {
+        clear:      { day: 'clear_day',   night: 'clear_night' },
+        clouds:     { day: 'cloud',        night: 'cloud'        },
+        rain:       { day: 'rainy',        night: 'rainy'        },
+        'heavy-rain':{ day: 'storm',       night: 'storm'        },
+        snow:       { day: 'snowing',      night: 'snowing'      },
+        thunder:    { day: 'thunderstorm', night: 'thunderstorm' },
+        fog:        { day: 'foggy',        night: 'foggy'        }
+    };
+
+    function getTimeSlot(h) {
+        if (h >= 6  && h < 8)  return 'sunrise';
+        if (h >= 8  && h < 12) return 'morning';
         if (h >= 12 && h < 17) return 'noon';
         if (h >= 17 && h < 19) return 'sunset';
         if (h >= 19 && h < 22) return 'evening';
         return 'night';
     }
 
-    function updateWidgetIcon(weather, time) {
-        if (!weatherIconElement) return;
-        let iconName = 'clear_day';
-        if (weather === 'clear') iconName = (time === 'night' || time === 'evening') ? 'clear_night' : 'clear_day';
-        else if (weather === 'clouds') iconName = 'cloud';
-        else if (weather === 'rain') iconName = 'rainy';
-        else if (weather === 'heavy-rain') iconName = 'storm';
-        else if (weather === 'snow') iconName = 'snowing';
-        else if (weather === 'thunder') iconName = 'thunderstorm';
-        else if (weather === 'fog') iconName = 'foggy';
-        weatherIconElement.textContent = iconName;
+    function applyBackground(timeSlot, weatherEffect) {
+        
+        const keep = document.body.className
+            .split(' ')
+            .filter(c => !c.startsWith('time-') && !c.startsWith('weather-'))
+            .join(' ');
+        document.body.className = `${keep} time-${timeSlot} weather-${weatherEffect}`.trim();
+
+        const icons = WEATHER_ICONS[weatherEffect] || WEATHER_ICONS['clear'];
+        const isNight = (timeSlot === 'night' || timeSlot === 'evening');
+        if (weatherIconEl) weatherIconEl.textContent = isNight ? icons.night : icons.day;
     }
 
-    function updateEnvironment() {
-        const time = getSystemTimeOfDay();
-        const weather = 'clear';
-        document.body.className = `time-${time} weather-${weather}`;
-        updateWidgetIcon(weather, time);
-        if (window.setWeatherEffect) window.setWeatherEffect(weather);
+    function updateClock() {
+        if (!timeTextEl) return;
+
+        const now = new Date();
+        let cityTime;
+
+        if (currentCityOffset !== null) {
+            
+            const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
+            cityTime = new Date(utcMs + currentCityOffset * 1000);
+        } else {
+            cityTime = now;
+        }
+
+        const h = cityTime.getHours();
+        const m = cityTime.getMinutes();
+        timeTextEl.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+
+        const timeSlot    = getTimeSlot(h);
+        const weatherClass = document.body.className
+            .split(' ')
+            .find(c => c.startsWith('weather-')) || 'weather-clear';
+        applyBackground(timeSlot, weatherClass.replace('weather-', ''));
     }
 
-    updateEnvironment();
+    
+    updateClock();
+    setInterval(updateClock, 1000);
+
+    
+    const API_BASE = 'http://127.0.0.1:8000';
+
+    async function fetchWeatherWiseData(city) {
+        city = (city || '').trim();
+        if (!city) {
+            alert("Please enter a city name!");
+            return;
+        }
+
+        // Loading state
+        const originalIcon = enterBtn?.textContent;
+        if (enterBtn) {
+            enterBtn.textContent = 'hourglass_empty';
+            enterBtn.style.pointerEvents = 'none';
+        }
+
+        try {
+            const res = await fetch(`${API_BASE}/recommend/?city=${encodeURIComponent(city)}`);
+
+            if (res.status === 404) throw new Error(`City "${city}" not found.`);
+            if (res.status === 503) throw new Error('Weather service temporarily unavailable.');
+            if (!res.ok)            throw new Error(`Server error (${res.status})`);
+
+            const data = await res.json();
+
+            
+            if (locationText) locationText.textContent = data.city;
+
+            
+            if (tempText) tempText.textContent = `${Math.round(data.temperature)}°C`;
+
+           
+            currentCityOffset = data.utc_offset;
+            updateClock();
+
+            
+            const effect = data.weather_effect || 'clear';
+            const currentSlot = getTimeSlot(
+                new Date(new Date().getTime() + new Date().getTimezoneOffset()*60000 + data.utc_offset*1000).getHours()
+            );
+            applyBackground(currentSlot, effect);
+            if (window.setWeatherEffect) window.setWeatherEffect(effect);
+
+            
+            if (aiResultsCard) aiResultsCard.style.display = 'block';
+
+            const elClothing = document.getElementById('ai-clothing');
+            const elUmbrella = document.getElementById('ai-umbrella');
+            const elScore    = document.getElementById('ai-score');
+            const elDecision = document.getElementById('ai-decision');
+
+            if (elClothing) elClothing.textContent = data.clothing_recommendation;
+            if (elUmbrella) elUmbrella.textContent = data.umbrella_needed ? "Yes ☂️" : "No 🌤️";
+            if (elScore)    elScore.textContent    = `${data.suitability_score}/10`;
+
+            if (elDecision) {
+                const go = data.go_or_no;
+                elDecision.textContent     = go ? "GO ✅" : "STAY ❌";
+                elDecision.style.background = go ? "rgba(46,204,113,0.2)" : "rgba(231,76,60,0.2)";
+                elDecision.style.color      = go ? "#2ecc71" : "#ff6b6b";
+            }
+
+        } catch (err) {
+            console.error('Fetch error:', err);
+            alert(`❌ ${err.message || 'Connection error. Make sure the backend is running!'}`);
+        } finally {
+            if (enterBtn) {
+                enterBtn.textContent = originalIcon;
+                enterBtn.style.pointerEvents = 'auto';
+            }
+        }
+    }
+
+    if (enterBtn)   enterBtn.addEventListener('click', () => fetchWeatherWiseData(searchInput?.value));
+    if (searchInput) searchInput.addEventListener('keypress', e => {
+        if (e.key === 'Enter') fetchWeatherWiseData(searchInput.value);
+    });
 });
