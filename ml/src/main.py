@@ -24,16 +24,16 @@ import analyze_forecast
 # Yardımcı: adım çalıştır, hata varsa yakala ama devam et
 # ---------------------------------------------------------------------------
 def _run_step(name: str, module) -> dict | None:
-    sep = "─" * 60
+    sep = "-" * 60
     print(f"\n{sep}")
-    print(f"  ▶  {name}")
+    print(f"  -> {name}")
     print(sep)
     try:
         result = module.run()
-        print(f"  ✔  {name} tamamlandı.\n")
+        print(f"  OK: {name} completed.\n")
         return result
     except Exception:
-        print(f"\n  ✘  {name} sırasında hata oluştu:")
+        print(f"\n  ERROR: {name} failed:")
         traceback.print_exc()
         return None
 
@@ -42,57 +42,57 @@ def _run_step(name: str, module) -> dict | None:
 # Özet tablosu yazdıran yardımcı
 # ---------------------------------------------------------------------------
 def _print_summary(results: dict[str, dict | None]) -> None:
-    banner = "═" * 60
+    banner = "=" * 60
     print(f"\n{banner}")
-    print("  📊  ÖZET METRİKLER")
+    print("  METRICS SUMMARY")
     print(banner)
 
-    # --- Şemsiye ---
-    m = results.get("Şemsiye Modeli")
+    # --- Umbrella ---
+    m = results.get("Umbrella Model")
     if m:
-        print("\n  🌂  Şemsiye (umbrella_needed) — İkili Sınıflandırma")
+        print("\n  Umbrella (umbrella_needed) - Binary Classification")
         print(f"      Dev  F1       : {m['dev_f1_best']:.4f}")
         print(f"      Test F1       : {m['test_f1']:.4f}")
-        print(f"      Karar Eşiği   : {m['decision_threshold']:.2f}")
-        print(f"      Eğitim / Dev / Test satır sayısı: "
+        print(f"      Threshold     : {m['decision_threshold']:.2f}")
+        print(f"      Train / Dev / Test rows: "
               f"{m['rows_train']} / {m['rows_dev']} / {m['rows_test']}")
 
     # --- Suitability ---
-    m = results.get("Suitability Modeli")
+    m = results.get("Suitability Model")
     if m:
-        print("\n  🌤   Dışarıda Uygunluk (outdoor_suitability_score) — Regresyon")
+        print("\n  Outdoor Suitability (outdoor_suitability_score) - Regression")
         print(f"      Dev  MAE      : {m['dev_mae']:.4f}")
         print(f"      Test MAE      : {m['test_mae']:.4f}")
-        print(f"      Dev  R²       : {m['dev_r2']:.4f}")
-        print(f"      Test R²       : {m['test_r2']:.4f}")
-        print(f"      Eğitim / Dev / Test satır sayısı: "
+        print(f"      Dev  R2       : {m['dev_r2']:.4f}")
+        print(f"      Test R2       : {m['test_r2']:.4f}")
+        print(f"      Train / Dev / Test rows: "
               f"{m['rows_train']} / {m['rows_dev']} / {m['rows_test']}")
 
     # --- Clothing ---
-    m = results.get("Giysi Modeli")
+    m = results.get("Clothing Model")
     if m:
-        print("\n  👗  Giysi Önerisi (clothing_recommendation) — Çok Sınıflı")
+        print("\n  Clothing Recommendation (clothing_recommendation) - Multi-class")
         print(f"      Dev  Accuracy : {m['dev_accuracy']:.4f}")
         print(f"      Test Accuracy : {m['test_accuracy']:.4f}")
         print(f"      Dev  Macro-F1 : {m['dev_macro_f1']:.4f}")
         print(f"      Test Macro-F1 : {m['test_macro_f1']:.4f}")
-        print(f"      Sınıf sayısı  : {m['n_classes']}")
-        print(f"      Eğitim / Dev / Test satır sayısı: "
+        print(f"      Class count   : {m['n_classes']}")
+        print(f"      Train / Dev / Test rows: "
               f"{m['rows_train']} / {m['rows_dev']} / {m['rows_test']}")
 
     # --- Forecast ---
-    m = results.get("Tahmin Analizi")
+    m = results.get("Forecast Analysis")
     if m:
-        print("\n  📡  Tahmin Kalitesi (forecast_vs_actual)")
-        print(f"      Genel Şemsiye Doğruluğu  : {m['overall_umbrella_accuracy']:.4f}")
-        print(f"      Genel Condition Doğruluğu: {m['overall_condition_accuracy']:.4f}")
-        print(f"      Toplam satır              : {m['total_rows']}")
+        print("\n  Forecast Quality (forecast_vs_actual)")
+        print(f"      Overall umbrella accuracy : {m['overall_umbrella_accuracy']:.4f}")
+        print(f"      Overall condition accuracy: {m['overall_condition_accuracy']:.4f}")
+        print(f"      Total rows                : {m['total_rows']}")
         if "lead_time_breakdown" in m and m["lead_time_breakdown"]:
-            print("      Lead Time Dökümü:")
+            print("      Lead time breakdown:")
             for row in m["lead_time_breakdown"]:
                 print(
-                    f"        {row['lead_time_hours']:>4} saat  →  "
-                    f"Şemsiye={row['umbrella_correct']:.3f}  "
+                    f"        {row['lead_time_hours']:>4} hours -> "
+                    f"Umbrella={row['umbrella_correct']:.3f}  "
                     f"Condition={row['condition_correct']:.3f}"
                 )
 
@@ -105,17 +105,17 @@ def _print_summary(results: dict[str, dict | None]) -> None:
 def main() -> None:
     results: dict[str, dict | None] = {}
 
-    results["Şemsiye Modeli"] = _run_step("Şemsiye Modeli", train_umbrella)
-    results["Suitability Modeli"] = _run_step("Suitability Modeli", train_suitability)
-    results["Giysi Modeli"] = _run_step("Giysi Modeli", train_clothing)
-    results["Tahmin Analizi"] = _run_step("Tahmin Analizi", analyze_forecast)
+    results["Umbrella Model"] = _run_step("Umbrella Model", train_umbrella)
+    results["Suitability Model"] = _run_step("Suitability Model", train_suitability)
+    results["Clothing Model"] = _run_step("Clothing Model", train_clothing)
+    results["Forecast Analysis"] = _run_step("Forecast Analysis", analyze_forecast)
 
     _print_summary(results)
 
     # Herhangi bir adım başarısız olduysa çıkış kodunu 1 yap (CI/CD uyumlu)
     failed = [k for k, v in results.items() if v is None]
     if failed:
-        print(f"  ⚠️  Başarısız adımlar: {', '.join(failed)}")
+        print(f"  Failed steps: {', '.join(failed)}")
         sys.exit(1)
 
 

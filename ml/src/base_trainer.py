@@ -1,6 +1,19 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import pandas as pd
+
+
+def repo_path(*parts: str) -> str:
+    """
+    Absolute path under the repository root (weatherwise/).
+
+    Scripts live in ml/src/, so parents[2] of this file is the repo root.
+    Works regardless of the process current working directory.
+    """
+    root = Path(__file__).resolve().parents[2]
+    return str(root.joinpath(*parts))
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
