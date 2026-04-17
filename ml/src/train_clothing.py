@@ -10,6 +10,9 @@ from sklearn.pipeline import Pipeline
 
 from base_trainer import build_preprocessor, load_training_data, repo_path
 
+# Optional UX layer experiments (not part of core hackathon training path):
+# from clothing_ux_policy import clothing_ux_from_proba, clothing_ux_to_payload
+
 DATA_PATH = repo_path("ml", "data", "raw", "hourly_observations.csv")
 MODEL_PATH = repo_path("ml", "trained_models", "clothing_model.pkl")
 SCHEMA_PATH = repo_path("ml", "trained_models", "clothing_feature_schema.json")
@@ -113,6 +116,69 @@ def run() -> dict:
     print(f"Clothing Test Macro-F1: {test_macro_f1:.4f}")
     print("Test classification report:")
     print(classification_report(y_test, test_pred, zero_division=0))
+
+    # ------------------------------------------------------------------
+    # UX presentation demo (optional; commented out for hackathon scope)
+    #
+    # This block does not change training; it only prints example payloads.
+    # Uncomment later to experiment with user-facing "top-2 + layering note"
+    # behavior based on predict_proba + simple weather guardrails.
+    # ------------------------------------------------------------------
+    # import numpy as np
+    #
+    # proba = clf.predict_proba(x_test)
+    # classes = list(clf.classes_)
+    # top2 = np.partition(proba, -2, axis=1)[:, -2:]
+    # top_p = top2[:, 1]
+    # margin = top_p - top2[:, 0]
+    #
+    # temp_c = pd.to_numeric(df_test.get("temperature_c"), errors="coerce").to_numpy()
+    # precip_mm = pd.to_numeric(df_test.get("precipitation_mm"), errors="coerce").to_numpy()
+    #
+    # def weather_dict(i: int) -> dict:
+    #     row = df_test.iloc[i]
+    #     return {
+    #         "temperature_c": row.get("temperature_c"),
+    #         "humidity_pct": row.get("humidity_pct"),
+    #         "precipitation_mm": row.get("precipitation_mm"),
+    #         "precipitation_type": row.get("precipitation_type"),
+    #         "weather_condition": row.get("weather_condition"),
+    #         "wind_speed_kmh": row.get("wind_speed_kmh"),
+    #         "wind_gust_kmh": row.get("wind_gust_kmh"),
+    #     }
+    #
+    # i_high = int(np.argmax(margin))
+    # i_low = int(np.argmin(margin))
+    #
+    # wet_mask = precip_mm > 0.05
+    # cold_mask = temp_c <= 12.0
+    # cand = np.flatnonzero(wet_mask & cold_mask & np.isfinite(temp_c))
+    # i_cw = int(cand[0]) if cand.size else i_low
+    #
+    # print("\nClothing UX policy examples (test split):")
+    # for title, idx in (
+    #     ("highest confidence margin", i_high),
+    #     ("lowest confidence margin", i_low),
+    #     (
+    #         "cold + wet example"
+    #         if cand.size
+    #         else "cold+wet not found; showing lowest margin",
+    #         i_cw,
+    #     ),
+    # ):
+    #     ux = clothing_ux_from_proba(
+    #         classes=classes,
+    #         proba_row=proba[idx],
+    #         weather=weather_dict(idx),
+    #     )
+    #     payload = clothing_ux_to_payload(ux)
+    #     ts = df_test.iloc[idx].get("timestamp")
+    #     print(f"- {title}: timestamp={ts}")
+    #     print(f"  weather={weather_dict(idx)}")
+    #     print(
+    #         f"  model_top={test_pred[idx]!r} p_top={top_p[idx]:.3f} margin={margin[idx]:.3f}"
+    #     )
+    #     print(f"  ux_payload={payload}")
 
     Path(repo_path("ml", "trained_models")).mkdir(parents=True, exist_ok=True)
     joblib.dump(clf, MODEL_PATH)
