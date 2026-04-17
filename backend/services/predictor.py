@@ -20,11 +20,11 @@ class WeatherPredictor:
         self._load_models()
 
     def _load_models(self):
-        base = os.path.dirname(__file__)
+        base = os.path.join(os.path.dirname(__file__), "..", "models", "artifacts")
         paths = {
-            "clothing":   "clothing_model.pkl",
-            "umbrella":   "umbrella_model.pkl",
-            "suitability":"suitability_model.pkl"
+            "clothing":    "clothing_model.pkl",
+            "umbrella":    "umbrella_model.pkl",
+            "suitability": "suitability_model.pkl"
         }
         try:
             for key, fname in paths.items():
@@ -47,7 +47,7 @@ class WeatherPredictor:
             return self._fallback(f)
 
         try:
-            vec = self._build_vector(f)
+            vec     = self._build_vector(f)
             c_idx   = int(self.models["clothing"].predict(vec)[0])
             u_need  = bool(self.models["umbrella"].predict(vec)[0])
             s_score = float(self.models["suitability"].predict(vec)[0])
@@ -56,25 +56,26 @@ class WeatherPredictor:
                 "umbrella_needed":         u_need,
                 "clothing_recommendation": CLOTHING_MAP.get(c_idx, "Normal Wear"),
                 "suitability_score":       round(s_score, 2),
-                "go_or_no":               s_score >= 6.0,
-                "mode":                   "ml"
+                "go_or_no":                s_score >= 6.0,
+                "mode":                    "ml"
             }
         except Exception:
             traceback.print_exc()
             return self._fallback(f)
 
     def _fallback(self, f: dict) -> dict:
-        temp  = f.get("temperature", 20)
+        temp   = f.get("temperature", 20)
         precip = f.get("precipitation", 0)
-        wind  = f.get("wind_speed_kmh", 0)
-        score = 8.0
-        if precip > 2:   score -= 3
-        elif precip > 0: score -= 1
-        if wind > 50:    score -= 2
+        wind   = f.get("wind_speed_kmh", 0)
+        score  = 8.0
+
+        if precip > 2:            score -= 3
+        elif precip > 0:          score -= 1
+        if wind > 50:             score -= 2
         if temp < 0 or temp > 40: score -= 1
         score = max(1.0, min(10.0, score))
 
-        if temp < 5:   clothing = "Heavy Winter Wear"
+        if temp < 5:    clothing = "Heavy Winter Wear"
         elif temp < 15: clothing = "Light Sweater"
         elif temp < 25: clothing = "Summer T-shirt"
         else:           clothing = "Light Summer Wear"
@@ -83,8 +84,8 @@ class WeatherPredictor:
             "umbrella_needed":         precip > 0.1,
             "clothing_recommendation": clothing,
             "suitability_score":       round(score, 2),
-            "go_or_no":               score >= 6.0,
-            "mode":                   "fallback"
+            "go_or_no":                score >= 6.0,
+            "mode":                    "fallback"
         }
 
 predictor = WeatherPredictor()
