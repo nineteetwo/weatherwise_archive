@@ -1,0 +1,11 @@
+WeatherWise static demo (HTML/CSS/JS)
+
+1. Start the API from repo root:
+   cd backend
+   uvicorn main:app --reload --port 8000
+
+2. Open index.html in this folder in your browser (double-click), or serve this directory with any static file server.
+
+The UI calls http://127.0.0.1:8000/recommend/ for live weather + ML.
+
+Scratch pages: index-test.html, login-test.html
