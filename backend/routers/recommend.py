@@ -2,6 +2,11 @@ from fastapi import APIRouter, HTTPException
 from services.weather import fetch_current_weather
 from services.normalizer import normalize_to_model_features
 from services.predictor import predictor
+from services.llm import generate_recommendation_tip
+from services.prompt_template import (
+    build_recommend_system_prompt,
+    build_recommend_user_prompt,
+)
 
 router = APIRouter(prefix="/recommend")
 
@@ -25,15 +30,35 @@ async def get_recommendation(city: str):
     weather_data = fetch_current_weather(city)
     features     = normalize_to_model_features(
         weather_data["raw"],
-        weather_data["utc_offset"]   #    offset  normalizer
+        weather_data["utc_offset"],   # local time enrichment
+        latitude=weather_data["latitude"],
+        longitude=weather_data["longitude"],
     )
     result = predictor.predict(features)
+
+    system_prompt = build_recommend_system_prompt()
+    prompt_weather_context = {
+        "location": weather_data["location"],
+        "country": weather_data["country"],
+        "timezone": weather_data["timezone"],
+        "raw": weather_data["raw"],
+        "normalized_features": features,
+    }
+    user_prompt = build_recommend_user_prompt(prompt_weather_context, result)
+
+    fallback_tip = "Carry an umbrella if rain is expected."
+
+    llm_output = generate_recommendation_tip(system_prompt, user_prompt, fallback_tip)
+
+    result["tip_text"] = llm_output["tip_text"]
+    result["llm_mode"] = llm_output["llm_mode"]
+
     effect = _weather_effect(weather_data, result)
 
     return {
         "city":                    weather_data["location"], 
         "country":                 weather_data["country"],
-        "temperature":             features["temperature"],
+        "temperature":             features["temperature_c"],
         "utc_offset":              weather_data["utc_offset"], 
         "timezone":                weather_data["timezone"],
         "umbrella_needed":         result["umbrella_needed"],
@@ -42,5 +67,7 @@ async def get_recommendation(city: str):
         "go_or_no":               result["go_or_no"],
         "weather_effect":          effect,                     
         "mode":                    result["mode"],
-        "hour_local":              features["hour_of_day"]
+        "hour_local":              features["hour_of_day"],
+        "tip_text":                result["tip_text"],
+        "llm_mode":                result["llm_mode"],
     }
