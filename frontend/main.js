@@ -159,6 +159,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // ✅ AI results
             if (aiResultsCard) aiResultsCard.style.display = 'block';
+            const structuredDataEl = document.getElementById('ai-structured-data');
+            if (structuredDataEl) structuredDataEl.style.display = 'flex';
+            const titleEl = aiResultsCard.querySelector('h3');
+            if (titleEl) titleEl.textContent = "🤖 AI Recommendation";
 
             const elClothing = document.getElementById('ai-clothing');
             const elUmbrella = document.getElementById('ai-umbrella');
@@ -192,8 +196,66 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    if (enterBtn)    enterBtn.addEventListener('click', () => fetchWeatherWiseData(searchInput?.value));
+    async function fetchChatData(city, question) {
+        const originalIcon = enterBtn?.textContent;
+        if (enterBtn) {
+            enterBtn.textContent         = 'hourglass_empty';
+            enterBtn.style.pointerEvents = 'none';
+        }
+        
+        try {
+            if (aiResultsCard) aiResultsCard.style.display = 'block';
+            const structuredDataEl = document.getElementById('ai-structured-data');
+            if (structuredDataEl) structuredDataEl.style.display = 'none';
+            
+            const titleEl = aiResultsCard.querySelector('h3');
+            if (titleEl) titleEl.textContent = "💬 PhanarAi Chat";
+            
+            if (aiAdviceEl) {
+                aiAdviceEl.textContent = "Thinking...";
+                aiAdviceEl.style.fontStyle = 'normal';
+            }
+            
+            const res = await fetch(`${API_BASE}/chat/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ city, question })
+            });
+            
+            if (!res.ok) throw new Error("Chat request failed");
+            const data = await res.json();
+            
+            if (aiAdviceEl) aiAdviceEl.textContent = data.answer || "No response.";
+            
+        } catch (err) {
+            console.error('Chat error:', err);
+            if (aiAdviceEl) aiAdviceEl.textContent = "Sorry, I couldn't process your question.";
+        } finally {
+            if (enterBtn) {
+                enterBtn.textContent         = originalIcon;
+                enterBtn.style.pointerEvents = 'auto';
+            }
+            if (searchInput) searchInput.value = '';
+        }
+    }
+
+    function handleUserSearch(inputValue) {
+        const val = (inputValue || '').trim();
+        if (!val) { alert("Please enter a city name or question!"); return; }
+
+        // Basit kural: Soru işareti varsa veya 3 kelimeden uzunsa -> sohbet sorusu
+        const isQuestion = val.length > 20 || val.includes('?') || val.split(' ').length > 2;
+        
+        if (isQuestion) {
+            const currentCity = locationText ? locationText.textContent : 'Istanbul';
+            fetchChatData(currentCity, val);
+        } else {
+            fetchWeatherWiseData(val);
+        }
+    }
+
+    if (enterBtn)    enterBtn.addEventListener('click', () => handleUserSearch(searchInput?.value));
     if (searchInput) searchInput.addEventListener('keypress', e => {
-        if (e.key === 'Enter') fetchWeatherWiseData(searchInput.value);
+        if (e.key === 'Enter') handleUserSearch(searchInput.value);
     });
 });
