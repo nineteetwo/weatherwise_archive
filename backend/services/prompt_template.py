@@ -29,38 +29,44 @@ def _pretty(obj: Any) -> str:
 def build_recommend_system_prompt() -> str:
     return _SYSTEM_PROMPT
 
-
 def build_recommend_user_prompt(weather: dict[str, Any], prediction: dict[str, Any]) -> str:
+    forecast_24h = weather.get("forecast_24h", [])
+    
     return (
-        "Create one short recommendation tip for the user.\n\n"
-        "Weather context:\n"
+        "Create a comprehensive daily recommendation for the user based on the 24-hour ML forecast.\n\n"
+        "Current Weather Context:\n"
         f"{_pretty(weather)}\n\n"
-        "Prediction context:\n"
+        "Current Prediction Context:\n"
         f"{_pretty(prediction)}\n\n"
+        "24-Hour Forecast Context:\n"
+        f"{_pretty(forecast_24h)}\n\n"
         "Output requirements:\n"
-        "- 2-4 short sentences\n"
+        "1. Tell the user exactly what clothing they should wear today.\n"
+        "2. Clearly state if they need to bring an umbrella and why.\n"
+        "3. Provide a friendly hour-by-hour (or period-by-period) summary of how the weather will change throughout the day.\n"
         "- non-technical\n"
-        "- actionable\n"
-        "- no bullet points"
+        "- warm and conversational"
     )
-
 
 def build_chat_system_prompt() -> str:
     return _SYSTEM_PROMPT
-
 
 def build_chat_user_prompt(
     question: str,
     weather: dict[str, Any],
     prediction: dict[str, Any],
 ) -> str:
+    forecast_24h = weather.get("forecast_24h", [])
+    
     return (
         "Answer the user's question using the provided context.\n\n"
         f"User question:\n{question}\n\n"
-        "Weather context:\n"
+        "Current Weather Context:\n"
         f"{_pretty(weather)}\n\n"
-        "Prediction context:\n"
+        "Current Prediction Context:\n"
         f"{_pretty(prediction)}\n\n"
+        "24-Hour Forecast Context:\n"
+        f"{_pretty(forecast_24h)}\n\n"
         "Output requirements:\n"
         "- concise conversational answer\n"
         "- practical and specific\n"

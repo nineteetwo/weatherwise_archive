@@ -247,7 +247,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const isQuestion = val.length > 20 || val.includes('?') || val.split(' ').length > 2;
         
         if (isQuestion) {
-            const currentCity = locationText ? locationText.textContent : 'Istanbul';
+            let currentCity = 'Istanbul';
+            if (locationText && locationText.textContent) currentCity = locationText.textContent;
+            
+            // Eğer giriş yapmış bir kullanıcı varsa, her zaman onun şehrini önceliklendir (eğer arama kısmına açıkça şehir adı girmediyse).
+            // (Mevcut mantık locationText kullanıyordu, o zaten her aramada güncelleniyor).
             fetchChatData(currentCity, val);
         } else {
             fetchWeatherWiseData(val);
@@ -258,4 +262,24 @@ document.addEventListener('DOMContentLoaded', () => {
     if (searchInput) searchInput.addEventListener('keypress', e => {
         if (e.key === 'Enter') handleUserSearch(searchInput.value);
     });
+
+    // ==========================================
+    // 4. AUTO-LOAD REGISTERED CITY
+    // ==========================================
+    let defaultCity = "Adana"; // Fallback
+    try {
+        const userInfoStr = localStorage.getItem('user_info');
+        if (userInfoStr) {
+            const userInfo = JSON.parse(userInfoStr);
+            if (userInfo.city) {
+                defaultCity = userInfo.city;
+            }
+        }
+    } catch (e) {
+        console.error("Error parsing user_info", e);
+    }
+    
+    // Sayfa açılışında kullanıcının şehrine göre otomatik istek at
+    fetchWeatherWiseData(defaultCity);
+
 });

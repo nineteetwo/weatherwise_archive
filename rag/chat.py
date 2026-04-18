@@ -11,6 +11,8 @@ from services.prompt_template import (
     build_chat_user_prompt,
 )
 
+from rag.utils import process_24h_forecast
+
 router = APIRouter(prefix="/chat", tags=["chat"])
 
 
@@ -32,7 +34,7 @@ async def chat(req: ChatRequest):
     # 1. Hava verisi
     weather_data = fetch_current_weather(city)
 
-    # 2. ML feature normalize (BUG FIX: "current_raw" kullan, "raw" değil)
+    # 2. ML feature normalize
     features = normalize_to_model_features(
         weather_data["current_raw"],
         weather_data["utc_offset"],
@@ -42,17 +44,21 @@ async def chat(req: ChatRequest):
 
     # 3. ML tahmini
     prediction = predictor.predict(features)
+    
+    # 4. 24h Loop for Context
+    hourly_forecast = process_24h_forecast(weather_data)
 
-    # 4. LLM context
+    # 5. LLM context
     weather_context = {
         "city":          weather_data["location"],
         "country":       weather_data["country"],
         "timezone":      weather_data["timezone"],
         "temperature_c": features.get("temperature_c"),
         "weather_raw":   weather_data["current_raw"],
+        "forecast_24h":  hourly_forecast,
     }
 
-    # 5. Prompt
+    # 6. Prompt
     system_prompt = build_chat_system_prompt()
     user_prompt   = build_chat_user_prompt(question, weather_context, prediction)
 
