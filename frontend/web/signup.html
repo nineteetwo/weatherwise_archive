@@ -10,7 +10,20 @@
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@1&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
 </head>
-<body class="time-night weather-clear">
+<body>
+
+<script>
+    (function(){
+        const h = new Date().getHours();
+        let t = 'night';
+        if(h>=6 && h<8) t='sunrise';
+        else if(h>=8 && h<12) t='morning';
+        else if(h>=12 && h<17) t='noon';
+        else if(h>=17 && h<19) t='sunset';
+        else if(h>=19 && h<22) t='evening';
+        document.body.className = `time-${t} weather-clear`;
+    })();
+</script>
     <div id="sky-gradient"></div>
     <div id="clouds-layer"></div>
     <div id="fog-layer"></div>
@@ -40,6 +53,24 @@
             </div>
 
             <div class="input-group">
+                <label id="txt-country-label">Country</label>
+                <div class="select-wrapper">
+                    <select id="country-select">
+                        <option value="">Loading Countries...</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label id="txt-city-label">City</label>
+                <div class="select-wrapper">
+                    <select id="city-select" disabled>
+                        <option value="">Select Country First</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="input-group">
                 <label id="txt-email-label">Email Address</label>
                 <input type="email" id="email-input" placeholder="mail@example.com">
             </div>
@@ -66,5 +97,5 @@
     <script src="weather.js"></script>
     <script src="main.js"></script>
     <script src="auth.js"></script>
-</body>
+    <script src="location.js"></script> </body>
 </html>

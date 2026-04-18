@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routers.recommend import router as rec_router
 from services.predictor import predictor
+from routers.chat import router as chat_router
 
 app = FastAPI(title="WeatherWise API")
 
@@ -14,6 +15,7 @@ app.add_middleware(
 )
 
 app.include_router(rec_router)
+app.include_router(chat_router)
 
 @app.get("/health")
 async def health():

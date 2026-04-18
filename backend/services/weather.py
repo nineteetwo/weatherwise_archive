@@ -2,9 +2,9 @@ import requests
 from fastapi import HTTPException
 
 CURRENT_FIELDS = (
-    "temperature_2m,relative_humidity_2m,precipitation,"
-    "wind_speed_10m,cloud_cover,pressure_msl,"
-    "weather_code,visibility,wind_direction_10m"
+    "temperature_2m,apparent_temperature,dew_point_2m,"
+    "relative_humidity_2m,precipitation,wind_speed_10m,wind_gusts_10m,"
+    "cloud_cover,pressure_msl,weather_code,visibility,wind_direction_10m,uv_index"
 )
 
 HOURLY_FIELDS = (

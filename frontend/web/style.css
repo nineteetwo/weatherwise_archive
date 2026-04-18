@@ -252,3 +252,64 @@ footer { padding: 24px; display: flex; flex-direction: column; align-items: cent
     .weather-widget { font-size: 14px; }
     .auth-container { padding: 30px 20px; }
 }
+/* --- Select Box Custom Styling --- */
+.select-wrapper {
+    position: relative;
+    display: flex;
+    width: 100%;
+}
+
+.select-wrapper select {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.2); 
+    border: 1px solid var(--ui-glass-border);
+    color: var(--ui-text);
+    padding: 14px 16px;
+    border-radius: 12px;
+    outline: none;
+    font-size: 15px;
+    transition: all 0.3s ease;
+    appearance: none;
+    cursor: pointer;
+}
+
+/* Gündüz teması uyumu */
+body.time-morning .select-wrapper select, 
+body.time-noon .select-wrapper select { 
+    background: rgba(255, 255, 255, 0.4); 
+}
+
+.select-wrapper select:focus { 
+    border-color: var(--ui-text); 
+    background: rgba(0, 0, 0, 0.3); 
+}
+
+/* Option (Açılır Menü) Tasarımı */
+.select-wrapper select option {
+    background: #111; 
+    color: #fff;
+}
+
+body.time-morning .select-wrapper select option, 
+body.time-noon .select-wrapper select option { 
+    background: #fff;
+    color: #0c132d;
+}
+
+/* Material Design Ok Simgesi */
+.select-wrapper::after {
+    content: 'expand_more';
+    font-family: 'Material Symbols Outlined';
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    color: var(--placeholder-color);
+    font-size: 20px;
+}
+
+.select-wrapper select:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}

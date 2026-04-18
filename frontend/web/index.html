@@ -38,10 +38,6 @@
             <span class="material-symbols-outlined">menu</span>
         </button>
         <div class="nav-right" id="nav-right">
-            <button class="glass-btn" id="create-img-btn">
-                <span class="material-symbols-outlined">image</span>
-                <span id="txt-create-image">Create Image</span>
-            </button>
             <select class="glass-btn" id="lang-select">
                 <option value="en">EN</option>
                 <option value="tr">TR</option>
@@ -69,6 +65,35 @@
             <div class="search-actions">
                 <span class="material-symbols-outlined icon-btn enter-btn">arrow_upward</span>
             </div>
+        </div>
+
+        <div id="ai-results" class="glass-panel" style="display: none; margin-top: 25px; padding: 20px; border-radius: 20px; width: 100%; max-width: 760px; text-align: left;">
+            <h3 style="margin-bottom: 15px; font-weight: 600; font-size: 18px; border-bottom: 1px solid var(--ui-glass-border); padding-bottom: 10px;">🤖 AI Recommendation</h3>
+            
+            <div style="display: flex; flex-direction: column; gap: 10px; font-size: 16px;">
+                <div style="display: flex; justify-content: space-between;">
+                    <span>👔 Clothing:</span>
+                    <strong id="ai-clothing">--</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span>☂️ Umbrella:</span>
+                    <strong id="ai-umbrella">--</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span>⭐ Suitability Score:</span>
+                    <strong id="ai-score">--/10</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--ui-glass-border);">
+                    <span>🚦 Final Decision:</span>
+                    <strong id="ai-decision" style="padding: 4px 12px; border-radius: 12px; font-size: 14px;">--</strong>
+                </div>
+            </div>
+
+            <div style="margin-top: 15px; padding: 12px 16px; border-radius: 14px; background: rgba(255,255,255,0.08); border: 1px solid var(--ui-glass-border); font-size: 15px; line-height: 1.6;">
+                <span style="font-weight: 600;">💬 AI Advice:</span>
+                <p id="ai-advice-text" style="margin: 6px 0 0; opacity: 0.9; font-style: italic;">--</p>
+            </div>
+
         </div>
     </main>
 
