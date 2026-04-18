@@ -8,8 +8,8 @@ app = FastAPI(title="WeatherWise API")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
-    allow_credentials=False,  
     allow_headers=["*"],
 )
 
