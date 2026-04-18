@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="favicon.png" type="image/png">
+    <title>PhanarAi — Home</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@1&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+</head>
+<body class="home-page">
+    <script>
+        (function () {
+            const h = new Date().getHours();
+            let t = 'night';
+            if (h >= 6 && h < 8) t = 'sunrise';
+            else if (h >= 8 && h < 12) t = 'morning';
+            else if (h >= 12 && h < 17) t = 'noon';
+            else if (h >= 17 && h < 19) t = 'sunset';
+            else if (h >= 19 && h < 22) t = 'evening';
+            document.body.className = `home-page time-${t} weather-clear`;
+        })();
+    </script>
+
+    <div id="sky-gradient"></div>
+    <div id="clouds-layer"></div>
+    <div id="fog-layer"></div>
+    <canvas id="weather-canvas"></canvas>
+    <div id="lightning-layer"></div>
+
+    <nav class="navbar">
+        <div class="nav-left">
+            <span class="logo-font nav-logo" id="home-logo" style="cursor: pointer;">PhanarAi</span>
+        </div>
+        <button class="hamburger-btn" id="hamburger-btn" type="button">
+            <span class="material-symbols-outlined">menu</span>
+        </button>
+        <div class="nav-right" id="nav-right">
+            <select class="glass-btn" id="lang-select">
+                <option value="en">EN</option>
+                <option value="tr">TR</option>
+                <option value="ru">RU</option>
+            </select>
+            <button type="button" class="glass-btn login-btn" id="nav-login" onclick="window.location.href='login.html'">Sign in</button>
+            <button type="button" class="glass-btn signup-btn" id="nav-signup" onclick="window.location.href='signup.html'">Sign up</button>
+        </div>
+    </nav>
+
+    <div class="app-viewport">
+        <div class="home-app-track" id="app-track">
+            <section class="app-panel app-panel--home" id="app-panel-home" aria-hidden="false">
+                <div class="home-toolbar glass-panel">
+                    <div class="home-toolbar-row home-toolbar-search">
+                        <span class="material-symbols-outlined" style="opacity:0.85;">location_on</span>
+                        <input type="text" id="home-city-search" placeholder="Search a city…" autocomplete="off">
+                        <button type="button" class="glass-btn home-search-btn" id="home-city-go" aria-label="Search">
+                            <span class="material-symbols-outlined">search</span>
+                        </button>
+                    </div>
+                    <div class="home-toolbar-row home-toolbar-meta">
+                        <span class="material-symbols-outlined" id="weather-icon">clear_night</span>
+                        <span id="location-text">—</span>
+                        <span class="dot-separator">•</span>
+                        <span id="time-text">--:--</span>
+                        <span class="dot-separator">•</span>
+                        <span id="temp-text">—</span>
+                        <span class="home-meta-spacer"></span>
+                        <span id="home-date" class="home-date"></span>
+                        <span class="dot-separator">•</span>
+                        <span id="home-user-name" class="home-user-name">Guest</span>
+                    </div>
+                </div>
+
+                <main class="home-main">
+                    <div class="home-grid">
+                        <aside class="home-col home-col-left">
+                            <section class="glass-panel home-card" id="home-ai-card">
+                                <h3 class="home-card-title">AI — right now</h3>
+                                <p class="home-card-sub">Generated from the current moment</p>
+                                <ul class="home-ai-list">
+                                    <li><span>Clothes</span><strong id="home-ai-clothing">—</strong></li>
+                                    <li><span>Umbrella</span><strong id="home-ai-umbrella">—</strong></li>
+                                    <li><span>Suitability</span><strong id="home-ai-score">—</strong></li>
+                                </ul>
+                                <div class="home-ai-tip glass-panel" style="margin-top:12px;padding:12px 14px;border-radius:14px;">
+                                    <span class="home-tip-label">Advice</span>
+                                    <p id="home-ai-tip" class="home-ai-tip-text">Search a city to get guidance.</p>
+                                </div>
+                            </section>
+                            <section class="glass-panel home-card home-community-mini">
+                                <h4 class="home-card-title">Community</h4>
+                                <p class="home-card-sub">How does it actually feel outside?</p>
+                                <button type="button" class="glass-btn home-cta-wide" id="btn-open-feel">Share how it feels</button>
+                            </section>
+                        </aside>
+
+                        <section class="glass-panel home-card home-24h">
+                            <h3 class="home-card-title">24h My Day</h3>
+                            <ul class="home-hourly-list" id="home-hourly-list">
+                                <li class="home-hourly-placeholder">Hourly outlook appears after you load a city.</li>
+                            </ul>
+                        </section>
+
+                        <aside class="home-col home-col-right">
+                            <div class="glass-panel home-card home-chat-launch">
+                                <h4 class="home-card-title">Ask the assistant</h4>
+                                <input type="text" id="home-chat-prefill" class="home-input" placeholder="e.g. Light jacket for evening?">
+                                <button type="button" class="auth-submit home-cta-wide" id="home-open-chat">Open chat</button>
+                            </div>
+                            <p class="home-optional-note">Community feed — optional for a later milestone.</p>
+                        </aside>
+                    </div>
+
+                    <section class="glass-panel home-feel-panel" id="home-feel-panel" hidden>
+                        <h4 class="home-card-title">How does it actually feel outside?</h4>
+                        <div class="home-feel-btns">
+                            <button type="button" class="glass-btn" data-feel="colder">Colder than advice</button>
+                            <button type="button" class="glass-btn" data-feel="accurate">Accurate</button>
+                            <button type="button" class="glass-btn" data-feel="warmer">Warmer than advice</button>
+                        </div>
+                        <div id="home-feel-result" class="home-feel-result"></div>
+                    </section>
+                </main>
+            </section>
+
+            <section class="app-panel app-panel--chat" id="app-panel-chat" aria-hidden="true">
+                <main class="app-panel-scroll">
+                    <div class="glass-panel auth-container app-panel-card">
+                        <h2 class="logo-font auth-title">Chat</h2>
+                        <p id="chat-stub-context" class="app-panel-lead"></p>
+                        <p class="app-panel-muted">Full chat UI hooks to <code>POST /chat</code> next.</p>
+                    </div>
+                </main>
+            </section>
+
+            <section class="app-panel app-panel--myday" id="app-panel-myday" aria-hidden="true">
+                <main class="app-panel-scroll">
+                    <div class="glass-panel auth-container app-panel-card">
+                        <h2 class="logo-font auth-title">My Day</h2>
+                        <p class="app-panel-lead">A focused 24h timeline view will live here (same data as Home).</p>
+                    </div>
+                </main>
+            </section>
+
+            <section class="app-panel app-panel--feed" id="app-panel-feed" aria-hidden="true">
+                <main class="app-panel-scroll">
+                    <div class="glass-panel auth-container app-panel-card">
+                        <h2 class="logo-font auth-title">Community feed</h2>
+                        <p class="app-panel-muted">Optional milestone — tips and reports from others.</p>
+                    </div>
+                </main>
+            </section>
+        </div>
+    </div>
+
+    <nav class="home-bottom-nav" aria-label="Main" role="tablist">
+        <button type="button" class="home-tab is-active" role="tab" aria-selected="true" data-app-view="0" id="tab-home">Home</button>
+        <button type="button" class="home-tab" role="tab" aria-selected="false" data-app-view="1" id="tab-chat">Chat</button>
+        <button type="button" class="home-tab" role="tab" aria-selected="false" data-app-view="2" id="tab-myday">My Day</button>
+        <button type="button" class="home-tab" role="tab" aria-selected="false" data-app-view="3" id="tab-feed">Feed</button>
+    </nav>
+
+    <script src="session.js"></script>
+    <script src="session-refresh.js"></script>
+    <script src="weather.js"></script>
+    <script src="home.js"></script>
+    <script src="session-nav.js"></script>
+</body>
+</html>

@@ -1,4 +1,7 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    if (window.refreshWeatherwiseSessionFromServer) {
+        await window.refreshWeatherwiseSessionFromServer();
+    }
 
     // ==========================================
     // 1. TRANSLATIONS
@@ -6,25 +9,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const translations = {
         en: {
             placeholder: "How can I help you today?",
-            privacy: "Privacy Policy", cookie: "Cookie Policy",
             createImage: "Create Image", navLogin: "Sign in", navSignup: "Sign up"
         },
         tr: {
             placeholder: "Bugün size nasıl yardımcı olabilirim?",
-            privacy: "Gizlilik Politikası", cookie: "Çerez Politikası",
             createImage: "Görsel Oluştur", navLogin: "Giriş Yap", navSignup: "Kayıt Ol"
         },
         ru: {
             placeholder: "Чем я могу вам помочь сегодня?",
-            privacy: "Политика конфиденциальности", cookie: "Файлы cookie",
             createImage: "Создать изобр.", navLogin: "Войти", navSignup: "Регистрация"
         }
     };
 
     const langSelect     = document.getElementById('lang-select');
     const searchInput    = document.getElementById('search-input');
-    const txtPrivacy     = document.getElementById('txt-privacy');
-    const txtCookie      = document.getElementById('txt-cookie');
     const txtCreateImage = document.getElementById('txt-create-image');
     const navLogin       = document.getElementById('nav-login');
     const navSignup      = document.getElementById('nav-signup');
@@ -43,8 +41,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const t = translations[lang];
         if (!t) return;
         if (searchInput)    searchInput.placeholder    = t.placeholder;
-        if (txtPrivacy)     txtPrivacy.textContent     = t.privacy;
-        if (txtCookie)      txtCookie.textContent      = t.cookie;
         if (txtCreateImage) txtCreateImage.textContent = t.createImage;
         if (navLogin)       navLogin.textContent       = t.navLogin;
         if (navSignup)      navSignup.textContent      = t.navSignup;
@@ -123,9 +119,8 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(updateClock, 1000);
 
     // ==========================================
-    // 3. FETCH & UPDATE UI
+    // 3. FETCH & UPDATE UI (same origin as this page, e.g. uvicorn + StaticFiles)
     // ==========================================
-    const API_BASE = 'http://127.0.0.1:8000';
 
     async function fetchWeatherWiseData(city) {
         city = (city || '').trim();
@@ -138,7 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            const res = await fetch(`${API_BASE}/recommend/?city=${encodeURIComponent(city)}`);
+            const res = await fetch(`/recommend/?city=${encodeURIComponent(city)}`);
             if (res.status === 404) throw new Error(`City "${city}" not found.`);
             if (res.status === 503) throw new Error('Weather service temporarily unavailable.');
             if (!res.ok)            throw new Error(`Server error (${res.status})`);

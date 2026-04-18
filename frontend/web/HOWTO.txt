@@ -4,8 +4,8 @@ WeatherWise static demo (HTML/CSS/JS)
    cd backend
    uvicorn main:app --reload --port 8000
 
-2. Open index.html in this folder in your browser (double-click), or serve this directory with any static file server.
+2. Open the app through the same server as the API (e.g. http://127.0.0.1:8000/home.html ) so /recommend/ resolves on the same origin. Opening HTML as file:// will not reach the API.
 
-The UI calls http://127.0.0.1:8000/recommend/ for live weather + ML.
+The UI calls /recommend/ (root-relative, same host as the page) for live weather + ML.
 
 Scratch pages: index-test.html, login-test.html

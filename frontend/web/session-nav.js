@@ -1,4 +1,8 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    if (window.refreshWeatherwiseSessionFromServer) {
+        await window.refreshWeatherwiseSessionFromServer();
+    }
+
     const session = window.WeatherwiseSession && window.WeatherwiseSession.get();
     const navLogin = document.getElementById('nav-login');
     const navSignup = document.getElementById('nav-signup');
@@ -16,7 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (session.mode === 'guest') {
         outBtn.textContent = 'Guest · Sign out';
     } else {
-        const label = session.email || session.displayName || 'Account';
+        const label = session.email || session.displayName || session.name || 'Account';
         const short = label.length > 18 ? label.slice(0, 16) + '…' : label;
         outBtn.textContent = short + ' · Sign out';
         outBtn.title = 'Sign out and return to welcome';

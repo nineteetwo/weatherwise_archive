@@ -5,24 +5,18 @@ document.addEventListener('DOMContentLoaded', () => {
             signIn: 'Sign in',
             signUp: 'Sign up',
             guest: 'Continue as guest',
-            privacy: 'Privacy Policy',
-            cookie: 'Cookie Policy',
         },
         tr: {
             tagline: 'Gökyüzü konuşur. Biz çeviririz.',
             signIn: 'Giriş Yap',
             signUp: 'Kayıt Ol',
             guest: 'Misafir olarak devam et',
-            privacy: 'Gizlilik Politikası',
-            cookie: 'Çerez Politikası',
         },
         ru: {
             tagline: 'Небо говорит. Мы переводим.',
             signIn: 'Войти',
             signUp: 'Регистрация',
             guest: 'Продолжить как гость',
-            privacy: 'Политика конфиденциальности',
-            cookie: 'Файлы cookie',
         },
     };
 
@@ -31,9 +25,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const signInEl = document.getElementById('btn-landing-signin');
     const signUpEl = document.getElementById('btn-landing-signup');
     const guestLabelEl = document.getElementById('txt-landing-guest');
-    const privacyEl = document.getElementById('txt-privacy');
-    const cookieEl = document.getElementById('txt-cookie');
-
     function applyTranslation(lang) {
         const t = translations[lang];
         if (!t) return;
@@ -41,8 +32,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (signInEl) signInEl.textContent = t.signIn;
         if (signUpEl) signUpEl.textContent = t.signUp;
         if (guestLabelEl) guestLabelEl.textContent = t.guest;
-        if (privacyEl) privacyEl.textContent = t.privacy;
-        if (cookieEl) cookieEl.textContent = t.cookie;
     }
 
     if (langSelect) {
