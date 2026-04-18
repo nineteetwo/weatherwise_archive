@@ -1,16 +1,25 @@
+import sys
 from pathlib import Path
+
+_here = Path(__file__).parent.resolve()
+sys.path.insert(0, str(_here))
+sys.path.insert(0, str(_here.parent))
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
-from routers.recommend import router as rec_router
+
+from rag.chat import router as chat_router
+from rag.recommend import router as rec_router
+from routers.auth import router as auth_router
 from services.predictor import predictor
-from routers.chat import router as chat_router
 
-app = FastAPI(title="WeatherWise API")
+from db import init_db
 
-_WEB_DIR = Path(__file__).resolve().parent.parent / "frontend" / "web"
+app = FastAPI(title="WeatherWise API", version="2.0.0")
+
+_WEB_DIR = _here.parent / "frontend" / "web"
 
 app.add_middleware(
     CORSMiddleware,
@@ -20,8 +29,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+@app.on_event("startup")
+async def startup_event():
+    init_db()
+
+
 app.include_router(rec_router)
 app.include_router(chat_router)
+app.include_router(auth_router)
 
 
 @app.get("/health")
@@ -29,7 +45,7 @@ async def health():
     return {
         "status": "ok",
         "models_active": predictor.is_loaded,
-        "mode": "ml" if predictor.is_loaded else "fallback"
+        "mode": "ml" if predictor.is_loaded else "fallback",
     }
 
 
@@ -43,4 +59,5 @@ if _WEB_DIR.is_dir():
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
