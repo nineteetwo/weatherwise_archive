@@ -6,7 +6,7 @@
 
 
 
-FROM yandex
+FROM YandexGPT-5-Lite-8B-instruct-GGUF
 
 
 
