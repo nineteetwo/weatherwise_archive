@@ -56,8 +56,11 @@
                 <label id="txt-pass-label">Password</label>
                 <input type="password" id="pass-input" placeholder="••••••••">
             </div>
+
+            <!-- Hata mesajı -->
+            <p id="login-error" style="color:#ff6b6b;font-size:13px;font-weight:500;display:none;text-align:center;margin:0;"></p>
             
-            <button class="auth-submit" id="btn-submit-login">Sign in</button>
+            <button class="auth-submit" id="btn-submit-login" onclick="handleLogin(event)">Sign in</button>
             
             <div class="auth-link">
                 <span id="txt-no-account">Don't have an account?</span> 
@@ -67,6 +70,6 @@
     </main>
 
     <script src="weather.js"></script>
-    <script src="main.js"></script>
+    <script src="auth_handler.js"></script>
 </body>
 </html>

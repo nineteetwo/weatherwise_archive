@@ -89,6 +89,26 @@ body.weather-thunder #lightning-layer { animation: lightning 5s infinite; }
 
 .signup-btn { background: var(--ui-text); color: var(--ui-inverse-text); font-weight: 600; text-shadow: none; }
 
+.nav-user-name {
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    cursor: default;
+    gap: 6px;
+}
+.nav-user-name::before { content: '👤 '; }
+
+.signout-btn {
+    background: rgba(231, 76, 60, 0.15);
+    border-color: rgba(231, 76, 60, 0.4);
+    color: var(--ui-text);
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+.signout-btn:hover {
+    background: rgba(231, 76, 60, 0.3);
+    transform: translateY(-1px);
+}
+
 .center-content { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 0 20px; z-index: 10; width: 100%; box-sizing: border-box; }
 
 .main-logo { font-size: 80px; margin-bottom: 10px; letter-spacing: 2px; }

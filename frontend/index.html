@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PhanarAi - Your Weather Companion</title>
+    <meta name="description" content="PhanarAi — AI-powered weather & wardrobe recommendations. Find out what to wear today.">
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -43,8 +44,12 @@
                 <option value="tr">TR</option>
                 <option value="ru">RU</option>
             </select>
+            <!-- Giriş yapılmamışsa gösterilir -->
             <button class="glass-btn login-btn" id="nav-login" onclick="window.location.href='login.html'">Sign in</button>
             <button class="glass-btn signup-btn" id="nav-signup" onclick="window.location.href='signup.html'">Sign up</button>
+            <!-- Giriş yapılmışsa gösterilir -->
+            <span class="glass-btn nav-user-name" id="nav-user" style="display:none;"></span>
+            <button class="glass-btn signout-btn" id="nav-signout" style="display:none;" onclick="signOut()">Sign out</button>
         </div>
     </nav>
 
@@ -93,7 +98,6 @@
                 <span style="font-weight: 600;">💬 AI Advice:</span>
                 <p id="ai-advice-text" style="margin: 6px 0 0; opacity: 0.9; font-style: italic;">--</p>
             </div>
-
         </div>
     </main>
 
@@ -106,6 +110,7 @@
     </footer>
 
     <script src="weather.js"></script>
+    <script src="auth_handler.js"></script>
     <script src="main.js"></script>
 </body>
 </html>
