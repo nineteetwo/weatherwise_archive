@@ -4,14 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="favicon.png" type="image/png">
-    <title>PhanarAi - Sign In</title>
+    <title>PhanarAi — Welcome</title>
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@1&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
 </head>
-<body class="auth-static-page">
+<body class="landing-page">
     <div class="landing-static-bg" aria-hidden="true"></div>
 
     <nav class="navbar auth-navbar">
@@ -27,31 +27,29 @@
         </div>
     </nav>
 
-    <main class="center-content">
-        <div class="auth-container glass-panel">
-            <h2 class="logo-font auth-title" id="txt-auth-title">Sign in</h2>
-            
-            <div class="input-group">
-                <label id="txt-email-label">Email Address</label>
-                <input type="email" id="email-input" placeholder="mail@example.com">
-            </div>
-            
-            <div class="input-group">
-                <label id="txt-pass-label">Password</label>
-                <input type="password" id="pass-input" placeholder="••••••••">
-            </div>
-            
-            <button type="button" class="auth-submit" id="btn-submit-login">Sign in</button>
-            
-            <div class="auth-link">
-                <span id="txt-no-account">Don't have an account?</span> 
-                <a href="signup.html" id="link-signup">Sign up</a>
-            </div>
+    <main class="center-content landing-main">
+        <h1 class="logo-font main-logo landing-logo">PhanarAi</h1>
+        <p class="landing-tagline" id="txt-landing-tagline">The sky speaks. We translate.</p>
+
+        <div class="landing-panel glass-panel">
+            <a class="glass-btn landing-cta" id="btn-landing-signin" href="login.html">Sign in</a>
+            <a class="glass-btn signup-btn landing-cta" id="btn-landing-signup" href="signup.html">Sign up</a>
+            <a class="glass-btn landing-cta landing-cta-guest" id="btn-landing-guest" href="index.html">
+                <span class="material-symbols-outlined" style="font-size: 20px;">travel_explore</span>
+                <span id="txt-landing-guest">Continue as guest</span>
+            </a>
         </div>
     </main>
 
+    <footer>
+        <div class="footer-links">
+            <a href="#" id="txt-privacy">Privacy Policy</a>
+            <a href="#" id="txt-cookie">Cookie Policy</a>
+        </div>
+        <div class="copyright">© 2026 Yandex Anadolu Hackathon Fenerbahce Team. All rights reserved.</div>
+    </footer>
+
     <script src="session.js"></script>
-    <script src="main.js"></script>
-    <script src="login.js"></script>
+    <script src="landing.js"></script>
 </body>
 </html>

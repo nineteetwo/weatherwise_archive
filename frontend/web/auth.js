@@ -44,6 +44,19 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             errorMsg.style.display = 'none';
+
+            const nameInput = document.getElementById('name-input');
+            const displayName = (nameInput && nameInput.value.trim()) || email.split('@')[0];
+
+            if (window.WeatherwiseSession) {
+                window.WeatherwiseSession.set({
+                    mode: 'signed_in',
+                    email,
+                    displayName,
+                    at: Date.now(),
+                });
+            }
+            window.location.href = 'index.html';
         });
     }
 });

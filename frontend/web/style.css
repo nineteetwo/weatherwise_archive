@@ -20,12 +20,18 @@ body.time-morning, body.time-noon {
     --shadow-color: rgba(255, 255, 255, 0.2);
 }
 
+html {
+    overflow-x: hidden;
+}
+
 body {
     color: var(--ui-text);
-    height: 100vh;
+    min-height: 100vh;
+    height: auto;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
     position: relative;
     text-shadow: 0 1px 3px var(--shadow-color);
     transition: color 0.5s ease;
@@ -34,7 +40,10 @@ body {
 .logo-font { font-family: 'Instrument Serif', serif; font-style: italic; }
 
 #sky-gradient, #clouds-layer, #fog-layer, #weather-canvas, #lightning-layer {
-    position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;
+    position: absolute;
+    inset: 0;
+    min-height: 100vh;
+    pointer-events: none;
 }
 #sky-gradient { z-index: -5; transition: background 2s ease; }
 #clouds-layer { z-index: -4; opacity: 0; transition: opacity 2s ease; background: url('https://www.transparenttextures.com/patterns/stardust.png'); animation: drift 100s linear infinite; }
@@ -312,4 +321,101 @@ body.time-noon .select-wrapper select option {
 .select-wrapper select:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+/* --- Static theme: landing + auth (same palette, no time-of-day sky) --- */
+body.landing-page,
+body.auth-static-page {
+    --ui-text: #ffffff;
+    --ui-inverse-text: #000000;
+    --ui-glass-bg: rgba(255, 255, 255, 0.1);
+    --ui-glass-border: rgba(255, 255, 255, 0.2);
+    --ui-glass-hover: rgba(255, 255, 255, 0.15);
+    --placeholder-color: rgba(255, 255, 255, 0.7);
+    --shadow-color: rgba(0, 0, 0, 0.3);
+}
+
+body.landing-page .landing-static-bg,
+body.auth-static-page .landing-static-bg {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background: linear-gradient(165deg, #0f2027 0%, #203a43 35%, #2c5364 70%, #141e30 100%);
+}
+
+body.landing-page .navbar,
+body.landing-page .center-content,
+body.landing-page footer,
+body.auth-static-page .navbar,
+body.auth-static-page .center-content {
+    position: relative;
+    z-index: 1;
+}
+
+body.landing-page .landing-main {
+    justify-content: center;
+    gap: 8px;
+}
+
+body.landing-page .landing-logo {
+    margin-bottom: 6px;
+}
+
+body.landing-page .landing-tagline {
+    max-width: 520px;
+    text-align: center;
+    font-size: 17px;
+    font-weight: 500;
+    line-height: 1.45;
+    opacity: 0.88;
+    margin-bottom: 28px;
+}
+
+body.landing-page .landing-panel {
+    width: 100%;
+    max-width: 420px;
+    padding: 28px 32px;
+    border-radius: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    box-sizing: border-box;
+    background: var(--ui-glass-bg);
+    border: 1px solid var(--ui-glass-border);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+body.landing-page .landing-cta {
+    width: 100%;
+    justify-content: center;
+    text-decoration: none;
+    border-radius: 14px;
+    padding: 14px 18px;
+    font-size: 15px;
+    font-weight: 600;
+    box-sizing: border-box;
+}
+
+body.landing-page .landing-cta-guest {
+    font-weight: 500;
+    margin-top: 4px;
+    border-style: dashed;
+}
+
+@media (max-width: 768px) {
+    body.landing-page .landing-panel {
+        padding: 24px 20px;
+    }
+    body.landing-page .landing-tagline {
+        font-size: 15px;
+    }
+}
+
+/* Auth forms on static theme: match landing glass card weight */
+body.auth-static-page .auth-container {
+    position: relative;
+    z-index: 1;
 }

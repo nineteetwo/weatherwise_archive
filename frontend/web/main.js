@@ -169,6 +169,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (elUmbrella) elUmbrella.textContent = data.umbrella_needed ? "Yes ☂️" : "No 🌤️";
             if (elScore)    elScore.textContent    = `${data.suitability_score}/10`;
 
+            const elTipText = document.getElementById('tip-text');
+            if (elTipText) elTipText.textContent = data.tip_text;
+
             if (elDecision) {
                 const go = data.go_or_no;
                 elDecision.textContent      = go ? "GO ✅" : "STAY ❌";
