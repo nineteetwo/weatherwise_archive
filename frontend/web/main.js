@@ -175,7 +175,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 elDecision.style.color      = go ? "#2ecc71" : "#ff6b6b";
             }
 
-            // ✅ AI Tip من Yandex أو rule-based
+            // AI tip from Ollama (GET /recommend) or rule-based fallback when LLM unavailable
             if (aiAdviceEl) {
                 aiAdviceEl.textContent = data.tip_text || '';
             }

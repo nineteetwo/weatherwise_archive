@@ -19,7 +19,7 @@
 - Shared trainer utilities live in `ml/src/base_trainer.py`.
 
 ## LLM and RAG Decisions
-- **LLM runtime:** local **Ollama** instance with model **`PhanarAi`** (LangChain `ChatOllama` in `backend/services/llm.py`). YandexGPT was discussed earlier but is **not** wired into this codebase.
+- **LLM runtime:** local **Ollama** over HTTP (LangChain `ChatOllama` in `backend/services/llm.py`). Model and base URL come from **`OLLAMA_MODEL`** / **`OLLAMA_BASE_URL`** in `backend/.env` (must match `ollama list`).
 - **LLM role:** convert structured outputs into concise, user-friendly advice.
 - **RAG (implemented):** `backend/services/rag_retriever.py` loads historical tabular data (CSV under `ml/data/…`) and uses **pandas filtering** (season, temperature band, condition, wind) to build a short context string for the LLM — **not** a vector-database embedding pipeline; still “structured retrieval,” but it is live code, not a future placeholder.
 - Keep fallback generation path when LLM is unavailable (rule-based response path required).

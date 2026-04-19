@@ -14,7 +14,8 @@ def _ollama_base_url() -> str:
 
 
 def _ollama_model() -> str:
-    return (os.getenv("OLLAMA_MODEL") or "PhanarAi").strip() or "PhanarAi"
+    # Default matches backend/.env.example (override with OLLAMA_MODEL / .env).
+    return (os.getenv("OLLAMA_MODEL") or "llama3").strip() or "llama3"
 
 
 def _call_ollama(system_prompt: str, user_prompt: str) -> str:
