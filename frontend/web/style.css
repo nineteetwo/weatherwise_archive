@@ -810,3 +810,107 @@ body.time-noon .home-input {
         max-height: 280px;
     }
 }
+
+/* --- Community comment system --- */
+.community-comments-list {
+    list-style: none;
+    margin: 10px 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 180px;
+    overflow-y: auto;
+}
+
+.community-feed-list {
+    max-height: 400px;
+}
+
+.community-comment-empty {
+    font-size: 13px;
+    opacity: 0.65;
+    padding: 6px 0;
+}
+
+.community-comment-item {
+    background: rgba(0,0,0,0.12);
+    border-radius: 12px;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    animation: fadeSlideIn 0.25s ease;
+}
+
+body.time-morning .community-comment-item,
+body.time-noon .community-comment-item {
+    background: rgba(255,255,255,0.25);
+}
+
+@keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.community-comment-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+.community-comment-author {
+    font-size: 13px;
+    font-weight: 700;
+    opacity: 0.95;
+}
+
+.community-comment-time {
+    font-size: 11px;
+    opacity: 0.55;
+    white-space: nowrap;
+}
+
+.community-comment-text {
+    font-size: 14px;
+    line-height: 1.5;
+    margin: 0;
+    opacity: 0.92;
+    word-break: break-word;
+}
+
+.community-comment-form {
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.community-textarea {
+    width: 100%;
+    background: rgba(0,0,0,0.2);
+    border: 1px solid var(--ui-glass-border);
+    border-radius: 12px;
+    color: var(--ui-text);
+    font-size: 14px;
+    font-family: inherit;
+    padding: 10px 14px;
+    resize: none;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color 0.2s;
+}
+
+.community-textarea:focus {
+    border-color: var(--ui-text);
+}
+
+body.time-morning .community-textarea,
+body.time-noon .community-textarea {
+    background: rgba(255,255,255,0.35);
+}
+
+.community-textarea::placeholder {
+    color: var(--placeholder-color);
+}

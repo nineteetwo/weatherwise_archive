@@ -13,10 +13,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const searchInput = document.getElementById('home-city-search');
     const goBtn = document.getElementById('home-city-go');
     const hourlyList = document.getElementById('home-hourly-list');
-    const feelPanel = document.getElementById('home-feel-panel');
-    const btnOpenFeel = document.getElementById('btn-open-feel');
-    const feelResult = document.getElementById('home-feel-result');
-    const chatPrefill = document.getElementById('home-chat-prefill');
     const btnOpenChat = document.getElementById('home-open-chat');
 
     const hamburgerBtn = document.getElementById('hamburger-btn');
@@ -200,37 +196,104 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    if (btnOpenFeel && feelPanel) {
-        btnOpenFeel.addEventListener('click', () => {
-            feelPanel.hidden = !feelPanel.hidden;
-            feelResult.textContent = '';
+    // Community comment system
+    const COMMENTS_KEY = 'weatherwise_community_comments';
+
+    function loadComments() {
+        try { return JSON.parse(localStorage.getItem(COMMENTS_KEY) || '[]'); }
+        catch { return []; }
+    }
+
+    function saveComments(arr) {
+        localStorage.setItem(COMMENTS_KEY, JSON.stringify(arr));
+    }
+
+    function renderCommentsList(listEl, comments) {
+        if (!listEl) return;
+        listEl.innerHTML = '';
+        if (!comments.length) {
+            listEl.innerHTML = '<li class="community-comment-empty">No comments yet. Be the first!</li>';
+            return;
+        }
+        comments.slice().reverse().forEach(c => {
+            const li = document.createElement('li');
+            li.className = 'community-comment-item';
+            li.innerHTML = `
+                <div class="community-comment-meta">
+                    <span class="community-comment-author">${escapeHtml(c.author)}</span>
+                    <span class="community-comment-time">${new Date(c.ts).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                </div>
+                <p class="community-comment-text">${escapeHtml(c.text)}</p>
+            `;
+            listEl.appendChild(li);
         });
     }
 
-    document.querySelectorAll('.home-feel-btns [data-feel]').forEach((btn) => {
-        btn.addEventListener('click', () => {
-            const s = window.WeatherwiseSession && window.WeatherwiseSession.get();
-            if (!feelResult) return;
-            if (!s || s.mode === 'guest') {
-                feelResult.innerHTML = 'Please <a href="login.html" style="font-weight:700;color:inherit;">log in</a> to leave community reports.';
-                return;
-            }
-            feelResult.textContent = 'Thanks — your report helps us give better advice!';
+    function escapeHtml(s) {
+        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function refreshAllComments() {
+        const comments = loadComments();
+        renderCommentsList(document.getElementById('community-comments-list'), comments);
+        renderCommentsList(document.getElementById('feed-comments-list'), comments);
+    }
+
+    function initCommunityUI() {
+        const s = window.WeatherwiseSession && window.WeatherwiseSession.get();
+        const isLoggedIn = s && s.mode !== 'guest';
+
+        const homeForm = document.getElementById('community-comment-form');
+        const homeHint = document.getElementById('community-login-hint');
+        const feedForm = document.getElementById('feed-comment-form');
+        const feedHint = document.getElementById('feed-login-hint');
+
+        if (isLoggedIn) {
+            if (homeForm) homeForm.style.display = '';
+            if (feedForm) feedForm.style.display = '';
+        } else {
+            if (homeHint) homeHint.style.display = '';
+            if (feedHint) feedHint.style.display = '';
+        }
+
+        refreshAllComments();
+
+        function postComment(inputEl) {
+            if (!inputEl) return;
+            const text = inputEl.value.trim();
+            if (!text) return;
+            const author = (s && (s.displayName || s.name || s.email)) || 'Anonymous';
+            const comments = loadComments();
+            comments.push({ author, text, ts: Date.now() });
+            if (comments.length > 100) comments.splice(0, comments.length - 100);
+            saveComments(comments);
+            inputEl.value = '';
+            refreshAllComments();
+        }
+
+        const homeSubmit = document.getElementById('community-comment-submit');
+        if (homeSubmit) homeSubmit.addEventListener('click', () => postComment(document.getElementById('community-comment-input')));
+
+        const feedSubmit = document.getElementById('feed-comment-submit');
+        if (feedSubmit) feedSubmit.addEventListener('click', () => postComment(document.getElementById('feed-comment-input')));
+
+        [document.getElementById('community-comment-input'), document.getElementById('feed-comment-input')].forEach(inp => {
+            if (inp) inp.addEventListener('keydown', e => {
+                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); postComment(inp); }
+            });
         });
-    });
+    }
+
+    initCommunityUI();
 
     const chatStubEl = document.getElementById('chat-stub-context');
 
     function refreshChatStub() {
         if (!chatStubEl) return;
-        const params = new URLSearchParams(location.search);
-        const qFromUrl = (params.get('q') || '').trim();
-        const cityFromUrl = (params.get('city') || '').trim();
-        const q = qFromUrl || (chatPrefill && chatPrefill.value.trim()) || '';
-        const cityRaw = cityFromUrl || (locationText && locationText.textContent.trim()) || defaultCityQuery() || '';
+        const cityRaw = (locationText && locationText.textContent.trim()) || defaultCityQuery() || '';
         const city = cityRaw && cityRaw !== '—' ? cityRaw : '';
         chatStubEl.textContent = city
-            ? `City: ${city}. ${q ? `Question: "${q}".` : 'Ask anything about the weather.'}`
+            ? `City: ${city}. Ask anything about the weather.`
             : 'Pick a city on Home to personalize chat context.';
     }
 

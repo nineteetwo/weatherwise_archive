@@ -91,10 +91,17 @@
                                     <p id="home-ai-tip" class="home-ai-tip-text">Search a city to get guidance.</p>
                                 </div>
                             </section>
-                            <section class="glass-panel home-card home-community-mini">
+                            <section class="glass-panel home-card home-community-mini" id="community-card">
                                 <h4 class="home-card-title">Community</h4>
-                                <p class="home-card-sub">How does it actually feel outside?</p>
-                                <button type="button" class="glass-btn home-cta-wide" id="btn-open-feel">Share how it feels</button>
+                                <p class="home-card-sub">What people are saying right now</p>
+                                <ul class="community-comments-list" id="community-comments-list">
+                                    <li class="community-comment-empty">No comments yet. Be the first!</li>
+                                </ul>
+                                <div id="community-comment-form" class="community-comment-form" style="display:none;">
+                                    <textarea id="community-comment-input" class="community-textarea" placeholder="Share how the weather feels…" rows="2" maxlength="280"></textarea>
+                                    <button type="button" class="auth-submit home-cta-wide" id="community-comment-submit" style="margin-top:8px;">Post comment</button>
+                                </div>
+                                <p id="community-login-hint" class="home-card-sub" style="margin-top:10px;text-align:center;display:none;"><a href="login.html" style="color:inherit;font-weight:700;">Sign in</a> to leave a comment.</p>
                             </section>
                         </aside>
 
@@ -108,10 +115,9 @@
                         <aside class="home-col home-col-right">
                             <div class="glass-panel home-card home-chat-launch">
                                 <h4 class="home-card-title">Ask the assistant</h4>
-                                <input type="text" id="home-chat-prefill" class="home-input" placeholder="e.g. Light jacket for evening?">
-                                <button type="button" class="auth-submit home-cta-wide" id="home-open-chat">Open chat</button>
+                                <p class="home-card-sub">Chat with the AI about weather & outfit advice.</p>
+                                <button type="button" class="auth-submit home-cta-wide" id="home-open-chat">Open chat →</button>
                             </div>
-                            <p class="home-optional-note">Community feed — optional for a later milestone.</p>
                         </aside>
                     </div>
 
@@ -160,9 +166,17 @@
 
             <section class="app-panel app-panel--feed" id="app-panel-feed" aria-hidden="true">
                 <main class="app-panel-scroll">
-                    <div class="glass-panel auth-container app-panel-card">
-                        <h2 class="logo-font auth-title">Community feed</h2>
-                        <p class="app-panel-muted">Optional milestone — tips and reports from others.</p>
+                    <div class="glass-panel app-panel-card" style="padding:24px 20px;max-width:640px;">
+                        <h2 class="logo-font auth-title" style="margin-bottom:4px;">Community</h2>
+                        <p class="app-panel-lead">Live comments from the community</p>
+                        <ul class="community-comments-list community-feed-list" id="feed-comments-list">
+                            <li class="community-comment-empty">No comments yet. Be the first!</li>
+                        </ul>
+                        <div id="feed-comment-form" class="community-comment-form" style="display:none;margin-top:18px;">
+                            <textarea id="feed-comment-input" class="community-textarea" placeholder="Share how the weather feels…" rows="3" maxlength="280"></textarea>
+                            <button type="button" class="auth-submit home-cta-wide" id="feed-comment-submit" style="margin-top:10px;">Post comment</button>
+                        </div>
+                        <p id="feed-login-hint" class="app-panel-muted" style="margin-top:16px;text-align:center;display:none;"><a href="login.html" style="color:inherit;font-weight:700;">Sign in</a> to leave a comment.</p>
                     </div>
                 </main>
             </section>
