@@ -613,7 +613,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     initUserLabel();
 
-    const startCity = defaultCityQuery();
+    let startCity = defaultCityQuery();
+    try {
+        const bootCity = (new URLSearchParams(location.search).get('city') || '').trim();
+        if (bootCity) startCity = bootCity;
+    } catch (_) {}
     syncingSearchInput = true;
     if (searchInput && startCity) searchInput.value = startCity;
     if (locationText && startCity) locationText.textContent = startCity;
@@ -635,6 +639,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     function currentReportCity() {
         const loc = locationText && locationText.textContent.trim();
         if (loc && loc !== '—') return loc;
+        try {
+            const fromUrl = (new URLSearchParams(location.search).get('city') || '').trim();
+            if (fromUrl) return fromUrl;
+        } catch (_) {}
         const fromSearch = searchInput && searchInput.value.trim();
         if (fromSearch) return fromSearch;
         return defaultCityQuery();
@@ -766,7 +774,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const question = (homeChatInputEl && homeChatInputEl.value) ? homeChatInputEl.value.trim() : '';
         if (!question) return;
 
-        const city = (locationText && locationText.textContent.trim()) || defaultCityQuery() || '';
+        const city = currentReportCity().trim();
         if (!city || city === '—') {
             alert('Please search for a city first on the Home tab!');
             return;
