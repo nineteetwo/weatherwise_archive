@@ -5,14 +5,20 @@ _here = Path(__file__).parent.resolve()
 sys.path.insert(0, str(_here))
 sys.path.insert(0, str(_here.parent))
 
+from dotenv import load_dotenv
+
+load_dotenv(_here / ".env")
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from rag.chat import router as chat_router
+from rag.feed import router as feed_router
 from rag.recommend import router as rec_router
 from routers.auth import router as auth_router
+from routers.report import router as report_router
 from services.predictor import predictor
 
 from db import init_db
@@ -37,7 +43,9 @@ async def startup_event():
 
 app.include_router(rec_router)
 app.include_router(chat_router)
+app.include_router(feed_router)
 app.include_router(auth_router)
+app.include_router(report_router)
 
 
 @app.get("/health")

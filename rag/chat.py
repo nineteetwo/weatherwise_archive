@@ -6,6 +6,7 @@ from services.normalizer import normalize_to_model_features
 from services.predictor import predictor
 
 from services.llm import generate_chat_answer
+from services.llm_compact import compact_prediction_for_llm, compact_weather_for_llm
 from services.prompt_template import (
     build_chat_system_prompt,
     build_chat_user_prompt,
@@ -43,18 +44,16 @@ async def chat(req: ChatRequest):
     # 3. ML tahmini
     prediction = predictor.predict(features)
 
-    # 4. LLM context
-    weather_context = {
-        "city":          weather_data["location"],
-        "country":       weather_data["country"],
-        "timezone":      weather_data["timezone"],
-        "temperature_c": features.get("temperature_c"),
-        "weather_raw":   weather_data["current_raw"],
-    }
+    # 4. LLM context (compact — full raw JSON was slowing Ollama prefill)
+    weather_context = compact_weather_for_llm(
+        weather_data, weather_data["current_raw"], features
+    )
 
     # 5. Prompt
     system_prompt = build_chat_system_prompt()
-    user_prompt   = build_chat_user_prompt(question, weather_context, prediction)
+    user_prompt = build_chat_user_prompt(
+        question, weather_context, compact_prediction_for_llm(prediction)
+    )
 
     # 6. Fallback metin
     umbrella_text = "Take an umbrella." if prediction.get("umbrella_needed") else "You likely do not need an umbrella."

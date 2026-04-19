@@ -3,12 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Redirect…</title>
-    <script>
-        location.replace('home.html' + location.search + '#chat');
-    </script>
+    <title>Chat — PhanarAi</title>
+    <meta name="description" content="PhanarAi chat opens in the app hub with your city and question preserved.">
+    <link rel="icon" href="favicon.png" type="image/png">
+    <link rel="stylesheet" href="style.css">
 </head>
-<body>
-    <p>Opening chat in the app hub… <a href="home.html#chat">Continue</a></p>
+<body class="chat-bridge-page">
+    <div class="chat-bridge-card glass-panel">
+        <p class="logo-font chat-bridge-logo">PhanarAi</p>
+        <h1 class="chat-bridge-title">Chat lives in the hub</h1>
+        <p class="chat-bridge-copy">
+            You are being moved to the in-app Chat tab. Any <code class="chat-bridge-code">?city=</code>,
+            <code class="chat-bridge-code">?q=</code> (or <code class="chat-bridge-code">?question=</code>),
+            and <code class="chat-bridge-code">?autostart=1</code> parameters stay on the URL so the hub can load context and optionally send the first message.
+        </p>
+        <p class="chat-bridge-status" role="status" aria-live="polite">Opening hub chat…</p>
+        <p class="chat-bridge-actions">
+            <a id="chat-bridge-cta" class="glass-btn chat-bridge-btn" href="home.html#chat">Continue to Chat</a>
+        </p>
+        <noscript>
+            <p class="chat-bridge-noscript-note">
+                JavaScript is off — use the button above, then add <code class="chat-bridge-code">?city=…&amp;q=…</code> to the address bar if you followed a shared link.
+            </p>
+        </noscript>
+    </div>
+    <script>
+        (function () {
+            var q = location.search || '';
+            var target = 'home.html' + q + '#chat';
+            var a = document.getElementById('chat-bridge-cta');
+            if (a) a.setAttribute('href', target);
+            location.replace(target);
+        })();
+    </script>
 </body>
 </html>

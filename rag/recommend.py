@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, HTTPException
 from services.weather import fetch_current_weather
 from services.normalizer import normalize_to_model_features
@@ -7,21 +9,16 @@ from services.prompt_template import (
     build_recommend_system_prompt,
     build_recommend_user_prompt,
 )
+from services.rag_retriever import retrieve_similar_conditions
+from services.llm_compact import (
+    compact_prediction_for_llm,
+    compact_weather_for_llm,
+    weather_effect_label,
+)
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/recommend")
-
-
-def _weather_effect(data_slice: dict) -> str:
-    code   = data_slice.get("weather_code", 0)
-    precip = data_slice.get("precipitation", 0)
-    temp   = data_slice.get("temperature_2m", 20)
-    if code in range(95, 100): return "thunder"
-    if code in range(71, 78):  return "snow"
-    if precip > 2:             return "heavy-rain"
-    if precip > 0:             return "rain"
-    if temp < 0:               return "snow"
-    if data_slice.get("cloud_cover", 0) > 70: return "clouds"
-    return "clear"
 
 
 @router.get("/")
@@ -44,23 +41,27 @@ async def get_recommendation(city: str):
     # 3. predict الحالي
     result = predictor.predict(features)
 
-    # 4. LLM tip
+    historical_context = None
+    try:
+        historical_context = retrieve_similar_conditions(features)
+    except Exception:
+        logger.exception("RAG retrieve_similar_conditions failed; continuing without RAG")
+        historical_context = None
+
+    # 4. LLM tip (compact context — full JSON was dominating prefill time on local Ollama)
     system_prompt = build_recommend_system_prompt()
-    prompt_weather_context = {
-        "location":             weather_data["location"],
-        "country":              weather_data["country"],
-        "timezone":             weather_data["timezone"],
-        "raw":                  current_raw,
-        "normalized_features":  features,
-    }
-    user_prompt  = build_recommend_user_prompt(prompt_weather_context, result)
+    user_prompt = build_recommend_user_prompt(
+        compact_weather_for_llm(weather_data, current_raw, features),
+        compact_prediction_for_llm(result),
+        historical_context,
+    )
     fallback_tip = _rule_based_tip(weather_data["location"], result, features)
     llm_output   = generate_recommendation_tip(system_prompt, user_prompt, fallback_tip)
 
     result["tip_text"] = llm_output["tip_text"]
     result["llm_mode"] = llm_output["llm_mode"]
 
-    current_effect = _weather_effect(current_raw)
+    current_effect = weather_effect_label(current_raw)
 
     # 5. الـ 24h loop
     hourly_forecast = []
@@ -83,7 +84,7 @@ async def get_recommendation(city: str):
             longitude=weather_data["longitude"],
         )
         h_result = predictor.predict(h_features)
-        h_effect = _weather_effect(hour_data)
+        h_effect = weather_effect_label(hour_data)
 
         hourly_forecast.append({
             "time":                    hour_data["time"],
@@ -111,6 +112,7 @@ async def get_recommendation(city: str):
         "hour_local":              features["hour_of_day"],
         "tip_text":                result["tip_text"],
         "llm_mode":                result["llm_mode"],
+        "rag_mode":                "dataset" if historical_context else "none",
         "forecast_24h":            hourly_forecast,
     }
 

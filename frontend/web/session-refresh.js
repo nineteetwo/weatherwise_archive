@@ -15,7 +15,8 @@
             const s = W.get();
             if (!s || s.mode !== 'signed_in' || !s.token) return;
             try {
-                const res = await fetch('/auth/me', {
+                var base = typeof global.weatherwiseApiBase === 'function' ? global.weatherwiseApiBase() : '';
+                const res = await fetch(base + '/auth/me', {
                     headers: { Authorization: 'Bearer ' + s.token },
                 });
                 if (res.ok) {

@@ -133,7 +133,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         try {
-            const res = await fetch(`/recommend/?city=${encodeURIComponent(city)}`);
+            var apiBase = typeof weatherwiseApiBase === 'function' ? weatherwiseApiBase() : '';
+            const res = await fetch(`${apiBase}/recommend/?city=${encodeURIComponent(city)}`);
             if (res.status === 404) throw new Error(`City "${city}" not found.`);
             if (res.status === 503) throw new Error('Weather service temporarily unavailable.');
             if (!res.ok)            throw new Error(`Server error (${res.status})`);

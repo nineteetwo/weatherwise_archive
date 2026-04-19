@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Header
 from pydantic import BaseModel
 
 from services.auth_service import hash_password, verify_password, create_access_token, decode_token
-from db import create_user, get_user_by_email, get_user_by_id
+from db import create_user, get_user_by_email, get_user_by_id, update_user_country_city
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -20,6 +20,11 @@ class RegisterRequest(BaseModel):
 class LoginRequest(BaseModel):
     email:    str
     password: str
+
+
+class UpdateProfileRequest(BaseModel):
+    country: str = ""
+    city:    str = ""
 
 
 # ─── Endpoints ───────────────────────────────────────────────────────────────
@@ -66,6 +71,39 @@ async def login(req: LoginRequest):
         "email":   user["email"],
         "country": user["country"],
         "city":    user["city"],
+    }
+
+
+@router.patch("/profile", summary="Update signed-in user country and city")
+async def update_profile(req: UpdateProfileRequest, authorization: str = Header(None)):
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    token = authorization.split(" ", 1)[1]
+    payload = decode_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+
+    user_id = int(payload.get("sub", 0))
+    user = get_user_by_id(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    country = (req.country or "").strip()
+    city = (req.city or "").strip()
+    if not city:
+        raise HTTPException(status_code=400, detail="City is required")
+
+    updated = update_user_country_city(user_id, country, city)
+    if not updated:
+        raise HTTPException(status_code=500, detail="Update failed")
+
+    return {
+        "id": updated["id"],
+        "name": updated["name"],
+        "email": updated["email"],
+        "country": updated["country"],
+        "city": updated["city"],
     }
 
 

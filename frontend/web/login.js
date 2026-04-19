@@ -41,7 +41,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         btn.disabled = true;
         try {
-            const res = await fetch('/auth/login', {
+            var apiBase = typeof weatherwiseApiBase === 'function' ? weatherwiseApiBase() : '';
+            const res = await fetch(apiBase + '/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password: passInput.value }),

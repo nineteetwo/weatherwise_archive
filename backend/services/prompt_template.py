@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 from typing import Any
 
@@ -30,19 +32,35 @@ def build_recommend_system_prompt() -> str:
     return _SYSTEM_PROMPT
 
 
-def build_recommend_user_prompt(weather: dict[str, Any], prediction: dict[str, Any]) -> str:
-    return (
+def build_recommend_user_prompt(
+    weather: dict[str, Any],
+    prediction: dict[str, Any],
+    historical_context: str | None = None,
+    community_context: str | None = None,
+) -> str:
+    parts = [
         "Create one short recommendation tip for the user.\n\n"
         "Weather context:\n"
         f"{_pretty(weather)}\n\n"
         "Prediction context:\n"
-        f"{_pretty(prediction)}\n\n"
+        f"{_pretty(prediction)}\n\n",
+    ]
+    if historical_context:
+        parts.append(f"{historical_context}\n\n")
+    if community_context:
+        parts.append(
+            "Recent local peer feedback (only shown when enough reports; use lightly, "
+            "do not contradict obvious weather):\n"
+            f"{community_context}\n\n"
+        )
+    parts.append(
         "Output requirements:\n"
         "- 2-4 short sentences\n"
         "- non-technical\n"
         "- actionable\n"
         "- no bullet points"
     )
+    return "".join(parts)
 
 
 def build_chat_system_prompt() -> str:
@@ -53,16 +71,22 @@ def build_chat_user_prompt(
     question: str,
     weather: dict[str, Any],
     prediction: dict[str, Any],
+    historical_context: str | None = None,
 ) -> str:
-    return (
+    parts = [
         "Answer the user's question using the provided context.\n\n"
         f"User question:\n{question}\n\n"
         "Weather context:\n"
         f"{_pretty(weather)}\n\n"
         "Prediction context:\n"
-        f"{_pretty(prediction)}\n\n"
+        f"{_pretty(prediction)}\n\n",
+    ]
+    if historical_context:
+        parts.append(f"{historical_context}\n\n")
+    parts.append(
         "Output requirements:\n"
         "- concise conversational answer\n"
         "- practical and specific\n"
         "- no technical jargon"
     )
+    return "".join(parts)

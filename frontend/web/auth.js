@@ -69,7 +69,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             signupBtn.disabled = true;
             try {
-                const res = await fetch('/auth/register', {
+                var apiBase = typeof weatherwiseApiBase === 'function' ? weatherwiseApiBase() : '';
+                const res = await fetch(apiBase + '/auth/register', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name, email, password, country, city }),

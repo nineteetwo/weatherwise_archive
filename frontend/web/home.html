@@ -31,9 +31,24 @@
     <canvas id="weather-canvas"></canvas>
     <div id="lightning-layer"></div>
 
-    <nav class="navbar">
+    <nav class="navbar home-navbar">
         <div class="nav-left">
             <span class="logo-font nav-logo" id="home-logo" style="cursor: pointer;">PhanarAi</span>
+            <div class="home-nav-location" aria-live="polite">
+                <span class="material-symbols-outlined home-nav-location-icon" aria-hidden="true">location_on</span>
+                <span id="location-text">—</span>
+            </div>
+            <div class="home-navbar-search-wrap">
+                <div class="home-nav-search-cluster glass-btn">
+                    <form class="home-nav-city-form" id="home-city-form" action="#" method="get" novalidate>
+                        <input type="text" id="home-city-search" name="city" role="combobox" aria-haspopup="listbox" placeholder="Find another city" autocomplete="off" enterkeyhint="search" aria-autocomplete="list" aria-controls="home-city-suggestions" aria-expanded="false">
+                        <button type="submit" class="home-nav-city-submit home-search-btn" id="home-city-go" aria-label="Load weather">
+                            <span class="material-symbols-outlined">search</span>
+                        </button>
+                    </form>
+                </div>
+                <ul id="home-city-suggestions" class="home-city-suggestions" role="listbox" hidden></ul>
+            </div>
         </div>
         <button class="hamburger-btn" id="hamburger-btn" type="button">
             <span class="material-symbols-outlined">menu</span>
@@ -53,16 +68,8 @@
         <div class="home-app-track" id="app-track">
             <section class="app-panel app-panel--home" id="app-panel-home" aria-hidden="false">
                 <div class="home-toolbar glass-panel">
-                    <div class="home-toolbar-row home-toolbar-search">
-                        <span class="material-symbols-outlined" style="opacity:0.85;">location_on</span>
-                        <input type="text" id="home-city-search" placeholder="Search a city…" autocomplete="off">
-                        <button type="button" class="glass-btn home-search-btn" id="home-city-go" aria-label="Search">
-                            <span class="material-symbols-outlined">search</span>
-                        </button>
-                    </div>
                     <div class="home-toolbar-row home-toolbar-meta">
                         <span class="material-symbols-outlined" id="weather-icon">clear_night</span>
-                        <span id="location-text">—</span>
                         <span class="dot-separator">•</span>
                         <span id="time-text">--:--</span>
                         <span class="dot-separator">•</span>
@@ -127,11 +134,34 @@
             </section>
 
             <section class="app-panel app-panel--chat" id="app-panel-chat" aria-hidden="true">
-                <main class="app-panel-scroll">
-                    <div class="glass-panel auth-container app-panel-card">
+                <main class="app-panel-scroll app-panel-scroll--chat">
+                    <div class="glass-panel auth-container app-panel-card home-chat-card">
                         <h2 class="logo-font auth-title">Chat</h2>
                         <p id="chat-stub-context" class="app-panel-lead"></p>
-                        <p class="app-panel-muted">Full chat UI hooks to <code>POST /chat</code> next.</p>
+                        <div class="home-chat-shell">
+                            <div class="home-chat-transcript-wrap">
+                                <div id="home-chat-transcript" class="home-chat-transcript" role="log" aria-relevant="additions" aria-live="polite">
+                                    <p id="home-chat-empty" class="home-chat-empty">Ask a question or use a quick chip — answers use your loaded city.</p>
+                                </div>
+                            </div>
+                            <div id="home-chat-typing" class="home-chat-typing" hidden>
+                                <span class="home-chat-typing-dots" aria-hidden="true"><span></span><span></span><span></span></span>
+                                <span class="home-chat-typing-label">Assistant is typing…</span>
+                            </div>
+                            <div class="home-chat-chips" role="group" aria-label="Quick prompts">
+                                <button type="button" class="home-chat-chip" data-chat-fill="What should I wear for the rest of the day?">Fill: outfit</button>
+                                <button type="button" class="home-chat-chip" data-chat-fill="Is a light jacket enough this evening?">Fill: jacket</button>
+                                <button type="button" class="home-chat-chip" data-chat-send="Do I need an umbrella in the next few hours?">Send: umbrella</button>
+                                <button type="button" class="home-chat-chip" data-chat-send="How suitable is it to be outside right now?">Send: outdoors</button>
+                            </div>
+                            <form class="home-chat-composer" id="home-chat-form" autocomplete="off">
+                                <label class="visually-hidden" for="home-chat-input">Message</label>
+                                <input type="text" id="home-chat-input" class="home-chat-input" placeholder="Ask about the weather…" maxlength="2000" enterkeyhint="send">
+                                <button type="submit" class="home-chat-send glass-btn" id="home-chat-send" aria-label="Send message">
+                                    <span class="material-symbols-outlined" aria-hidden="true">send</span>
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 </main>
             </section>
@@ -148,8 +178,10 @@
             <section class="app-panel app-panel--feed" id="app-panel-feed" aria-hidden="true">
                 <main class="app-panel-scroll">
                     <div class="glass-panel auth-container app-panel-card">
-                        <h2 class="logo-font auth-title">Community feed</h2>
-                        <p class="app-panel-muted">Optional milestone — tips and reports from others.</p>
+                        <h2 class="logo-font auth-title">City feed</h2>
+                        <p id="home-feed-lead" class="app-panel-lead app-panel-muted">Hourly outlook for your active city (same as Home).</p>
+                        <p id="home-feed-status" class="home-feed-status" aria-live="polite"></p>
+                        <ul id="home-feed-list" class="home-feed-list"></ul>
                     </div>
                 </main>
             </section>

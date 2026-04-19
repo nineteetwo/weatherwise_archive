@@ -1,7 +1,4 @@
 document.addEventListener('DOMContentLoaded', async () => {
-    if (window.refreshWeatherwiseSessionFromServer) {
-        await window.refreshWeatherwiseSessionFromServer();
-    }
     const LAST_CITY_KEY = 'weatherwise_last_city';
 
     const weatherIconEl = document.getElementById('weather-icon');
@@ -12,6 +9,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const userNameEl = document.getElementById('home-user-name');
     const searchInput = document.getElementById('home-city-search');
     const goBtn = document.getElementById('home-city-go');
+    const suggestionsEl = document.getElementById('home-city-suggestions');
     const hourlyList = document.getElementById('home-hourly-list');
     const feelPanel = document.getElementById('home-feel-panel');
     const btnOpenFeel = document.getElementById('btn-open-feel');
@@ -31,6 +29,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     let currentCityOffset = null;
+    let cityFetchAbort = null;
+    let cityFetchInflight = 0;
+    let placesCountries = null;
+    /** @type {{ country: string, city: string, lo: string }[] | null} */
+    let placesFlat = null;
+    let pendingCountry = '';
+    let syncingSearchInput = false;
+    let suggestTimer = null;
+    /** @type {{ country: string, city: string }[]} */
+    let suggestionMatchList = [];
+    let activeSuggestionIndex = -1;
 
     const WEATHER_ICONS = {
         clear: { day: 'clear_day', night: 'clear_night' },
@@ -97,16 +106,298 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function initUserLabel() {
         const s = window.WeatherwiseSession && window.WeatherwiseSession.get();
-        if (!userNameEl) return;
-        if (!s) {
-            userNameEl.textContent = 'Guest';
+        if (userNameEl) {
+            if (!s) userNameEl.textContent = 'Guest';
+            else if (s.mode === 'guest') userNameEl.textContent = 'Guest';
+            else userNameEl.textContent = s.displayName || s.name || s.email || 'You';
+        }
+    }
+
+    function apiBase() {
+        return typeof window.weatherwiseApiBase === 'function' ? window.weatherwiseApiBase() : '';
+    }
+
+    function profileCityDiffersFrom(stored, resolved) {
+        return (
+            String(stored || '')
+                .trim()
+                .toLowerCase() !==
+            String(resolved || '')
+                .trim()
+                .toLowerCase()
+        );
+    }
+
+    async function saveDefaultCityToAccount(country, city) {
+        const s = window.WeatherwiseSession && window.WeatherwiseSession.get();
+        if (!s || s.mode !== 'signed_in' || !s.token) {
+            alert('Sign in to save your city to your account.');
             return;
         }
-        if (s.mode === 'guest') {
-            userNameEl.textContent = 'Guest';
+        const c = String(city || '').trim();
+        if (!c) return;
+        try {
+            const res = await fetch(`${apiBase()}/auth/profile`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${s.token}`,
+                },
+                body: JSON.stringify({ country: String(country || ''), city: c }),
+            });
+            const body = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                const msg = typeof body.detail === 'string' ? body.detail : 'Could not save city to your profile.';
+                alert(msg);
+                return;
+            }
+            window.WeatherwiseSession.set({
+                ...s,
+                country: body.country != null ? body.country : country,
+                city: body.city != null ? body.city : c,
+            });
+        } catch (e) {
+            alert(e.message || 'Network error saving city.');
+        }
+    }
+
+    async function ensurePlacesLoaded() {
+        if (placesCountries) return;
+        try {
+            const res = await fetch('https://countriesnow.space/api/v0.1/countries');
+            const json = await res.json();
+            if (json.error || !Array.isArray(json.data)) return;
+            placesCountries = json.data.slice().sort((a, b) => String(a.country).localeCompare(String(b.country)));
+            placesFlat = [];
+            for (const row of placesCountries) {
+                const ctry = String(row.country || '');
+                const cities = Array.isArray(row.cities) ? row.cities : [];
+                for (const city of cities) {
+                    const cs = String(city);
+                    placesFlat.push({ country: ctry, city: cs, lo: cs.toLowerCase() });
+                }
+            }
+        } catch (e) {
+            console.warn('Places list unavailable', e);
+        }
+    }
+
+    const PLACES_MATCH_MAX = 28;
+    const PLACES_SCAN_BUDGET = 52000;
+
+    /**
+     * @returns {{ matches: { country: string, city: string }[], partial: boolean }}
+     */
+    function matchPlaces(query) {
+        if (!placesCountries || !placesFlat) {
+            return { matches: [], partial: false };
+        }
+        const q = query.trim().toLowerCase();
+        if (q.length < 2) return { matches: [], partial: false };
+        const out = [];
+        const seen = new Set();
+        let scanned = 0;
+        let partial = false;
+
+        function add(ctry, city) {
+            const k = `${ctry}\0${city}`;
+            if (seen.has(k)) return;
+            seen.add(k);
+            out.push({ country: ctry, city });
+        }
+
+        for (const row of placesFlat) {
+            if (out.length >= PLACES_MATCH_MAX) break;
+            scanned += 1;
+            if (scanned > PLACES_SCAN_BUDGET) {
+                partial = true;
+                break;
+            }
+            if (row.lo.includes(q)) add(row.country, row.city);
+        }
+        if (out.length < 8) {
+            for (const row of placesCountries) {
+                if (out.length >= PLACES_MATCH_MAX) break;
+                const ctry = String(row.country || '');
+                if (!ctry.toLowerCase().includes(q)) continue;
+                const cities = (Array.isArray(row.cities) ? row.cities : []).slice().sort();
+                for (let i = 0; i < Math.min(18, cities.length) && out.length < PLACES_MATCH_MAX; i += 1) {
+                    add(ctry, String(cities[i]));
+                }
+            }
+        }
+        return { matches: out, partial };
+    }
+
+    function syncSuggestionHighlight() {
+        if (!suggestionsEl || !searchInput) return;
+        const opts = suggestionsEl.querySelectorAll('li[role="option"]');
+        opts.forEach((li, i) => {
+            const on = i === activeSuggestionIndex;
+            li.classList.toggle('is-active', on);
+            li.setAttribute('aria-selected', on ? 'true' : 'false');
+        });
+        if (activeSuggestionIndex >= 0 && opts[activeSuggestionIndex]) {
+            searchInput.setAttribute('aria-activedescendant', opts[activeSuggestionIndex].id);
+        } else {
+            searchInput.removeAttribute('aria-activedescendant');
+        }
+    }
+
+    function hideSuggestions() {
+        if (!suggestionsEl) return;
+        suggestionsEl.hidden = true;
+        suggestionsEl.innerHTML = '';
+        suggestionMatchList = [];
+        activeSuggestionIndex = -1;
+        if (searchInput) {
+            searchInput.setAttribute('aria-expanded', 'false');
+            searchInput.removeAttribute('aria-activedescendant');
+        }
+    }
+
+    function showSuggestionStatus(text, className) {
+        if (!suggestionsEl) return;
+        suggestionsEl.innerHTML = '';
+        suggestionMatchList = [];
+        activeSuggestionIndex = -1;
+        if (searchInput) searchInput.removeAttribute('aria-activedescendant');
+        const li = document.createElement('li');
+        li.className = className || 'home-city-suggest-status';
+        li.setAttribute('role', 'status');
+        li.textContent = text;
+        suggestionsEl.appendChild(li);
+        suggestionsEl.hidden = false;
+        if (searchInput) searchInput.setAttribute('aria-expanded', 'true');
+    }
+
+    function pickSuggestionAtIndex(i) {
+        const m = suggestionMatchList[i];
+        if (!m) return;
+        pendingCountry = m.country;
+        syncingSearchInput = true;
+        if (searchInput) searchInput.value = m.city;
+        syncingSearchInput = false;
+        hideSuggestions();
+        const picked = String(m.city || '').trim();
+        if (!picked) return;
+        if (!commitCitySelection(picked)) return;
+        void fetchForCity(picked, { askDefaultCity: true });
+    }
+
+    function showSuggestions(matches, queryTrimmed, partialScan) {
+        if (!suggestionsEl) return;
+        suggestionsEl.innerHTML = '';
+        const qt = String(queryTrimmed || '').trim();
+        suggestionMatchList = matches.slice();
+        activeSuggestionIndex = -1;
+        if (!matches.length) {
+            if (qt.length >= 2) {
+                showSuggestionStatus(
+                    'No matches in the list — press Search to try this name.',
+                    'home-city-suggest-status',
+                );
+            } else {
+                hideSuggestions();
+            }
             return;
         }
-        userNameEl.textContent = s.displayName || s.name || s.email || 'You';
+        matches.forEach((m, i) => {
+            const li = document.createElement('li');
+            li.setAttribute('role', 'option');
+            li.setAttribute('aria-selected', 'false');
+            li.id = `home-city-sug-${i}`;
+            const line = document.createElement('span');
+            line.className = 'suggestion-line';
+            line.textContent = m.city;
+            const sub = document.createElement('span');
+            sub.className = 'suggestion-country';
+            sub.textContent = m.country;
+            li.appendChild(line);
+            li.appendChild(sub);
+            li.addEventListener('mouseenter', () => {
+                activeSuggestionIndex = i;
+                syncSuggestionHighlight();
+            });
+            li.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                pickSuggestionAtIndex(i);
+            });
+            suggestionsEl.appendChild(li);
+        });
+        if (partialScan) {
+            const note = document.createElement('li');
+            note.className = 'home-city-suggest-hint';
+            note.setAttribute('role', 'presentation');
+            note.textContent = 'List truncated — type more letters or press Search.';
+            suggestionsEl.appendChild(note);
+        }
+        suggestionsEl.hidden = false;
+        if (searchInput) searchInput.setAttribute('aria-expanded', 'true');
+        syncSuggestionHighlight();
+    }
+
+    async function refreshSuggestionsFromInput() {
+        if (!searchInput || syncingSearchInput) return;
+        const raw = searchInput.value || '';
+        const qt = raw.trim();
+        if (!qt.length) {
+            hideSuggestions();
+            return;
+        }
+        if (qt.length === 1) {
+            showSuggestionStatus(
+                'Keep typing for country and city suggestions…',
+                'home-city-suggest-hint',
+            );
+            void ensurePlacesLoaded();
+            return;
+        }
+        if (!placesCountries) {
+            showSuggestionStatus('Loading city list…', 'home-city-suggest-status');
+        }
+        await ensurePlacesLoaded();
+        if (!placesCountries) {
+            showSuggestionStatus(
+                'Could not load suggestions — press Search to continue.',
+                'home-city-suggest-status',
+            );
+            return;
+        }
+        const { matches, partial } = matchPlaces(raw);
+        showSuggestions(matches, qt, partial);
+    }
+
+    /**
+     * Persist chosen city/country in session + storage before /recommend resolves.
+     * Account default city is updated only after a successful load (see fetchForCity).
+     */
+    function commitCitySelection(rawCity) {
+        const city = (rawCity || '').trim();
+        if (!city) {
+            alert('Please enter a city name.');
+            return false;
+        }
+        const countryHint = String(pendingCountry || '').trim();
+        sessionStorage.setItem(LAST_CITY_KEY, city);
+        if (locationText) locationText.textContent = city;
+        syncingSearchInput = true;
+        if (searchInput) searchInput.value = city;
+        syncingSearchInput = false;
+
+        if (window.WeatherwiseSession) {
+            const s = window.WeatherwiseSession.get();
+            if (s) {
+                window.WeatherwiseSession.set({
+                    ...s,
+                    city,
+                    country: countryHint || s.country || '',
+                });
+            }
+        }
+        hideSuggestions();
+        pendingCountry = '';
+        return true;
     }
 
     function defaultCityQuery() {
@@ -141,30 +432,52 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    async function fetchForCity(city) {
+    async function fetchForCity(city, opts) {
+        const askDefaultCity =
+            opts && typeof opts === 'object' && opts.askDefaultCity === true;
         city = (city || '').trim();
         if (!city) {
             alert('Please enter a city name.');
             return;
         }
 
-        const original = goBtn?.querySelector('.material-symbols-outlined')?.textContent;
+        if (cityFetchAbort) cityFetchAbort.abort();
+        cityFetchAbort = new AbortController();
+        const { signal } = cityFetchAbort;
+
+        cityFetchInflight += 1;
         if (goBtn) {
-            goBtn.disabled = true;
+            goBtn.classList.add('is-loading');
             const icon = goBtn.querySelector('.material-symbols-outlined');
             if (icon) icon.textContent = 'hourglass_empty';
         }
 
         try {
-            const res = await fetch(`/recommend/?city=${encodeURIComponent(city)}`);
+            const res = await fetch(`${apiBase()}/recommend/?city=${encodeURIComponent(city)}`, { signal });
             if (res.status === 404) throw new Error(`City "${city}" not found.`);
             if (res.status === 503) throw new Error('Weather service temporarily unavailable.');
             if (!res.ok) throw new Error(`Server error (${res.status})`);
 
             const data = await res.json();
-            sessionStorage.setItem(LAST_CITY_KEY, data.city || city);
+            if (signal.aborted) return;
+            const resolvedCity = data.city || city;
+            sessionStorage.setItem(LAST_CITY_KEY, resolvedCity);
+            syncingSearchInput = true;
+            if (searchInput) searchInput.value = resolvedCity;
+            syncingSearchInput = false;
 
-            if (locationText) locationText.textContent = data.city;
+            if (window.WeatherwiseSession) {
+                const s = window.WeatherwiseSession.get();
+                if (s) {
+                    window.WeatherwiseSession.set({
+                        ...s,
+                        city: resolvedCity,
+                        country: data.country != null ? data.country : s.country,
+                    });
+                }
+            }
+
+            if (locationText) locationText.textContent = resolvedCity;
             if (tempText) tempText.textContent = `${Math.round(data.temperature)}°C`;
             currentCityOffset = data.utc_offset;
 
@@ -184,32 +497,124 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (tip) tip.textContent = data.tip_text || '—';
 
             renderHourly(data.forecast_24h || []);
+
+            const sess = window.WeatherwiseSession && window.WeatherwiseSession.get();
+            if (
+                askDefaultCity &&
+                sess &&
+                sess.mode === 'signed_in' &&
+                sess.token &&
+                profileCityDiffersFrom(sess.city, resolvedCity)
+            ) {
+                const ok = window.confirm(
+                    `Set “${resolvedCity}” as your default city on your account?`,
+                );
+                if (ok) await saveDefaultCityToAccount(data.country, resolvedCity);
+            }
+
+            hideSuggestions();
         } catch (err) {
+            if (err.name === 'AbortError') return;
             console.error(err);
-            alert(err.message || 'Connection error. Is the backend running?');
+            var msg = err && err.message ? err.message : 'Connection error.';
+            if (msg === 'Failed to fetch') {
+                msg =
+                    'Could not reach the API (network error). Start uvicorn on port 8000, ' +
+                    'or open the app at http://127.0.0.1:8000/home.html so the same server serves the UI.';
+            }
+            alert(msg);
         } finally {
-            if (goBtn) {
-                goBtn.disabled = false;
+            cityFetchInflight -= 1;
+            if (goBtn && cityFetchInflight <= 0) {
+                goBtn.classList.remove('is-loading');
                 const icon = goBtn.querySelector('.material-symbols-outlined');
-                if (icon) icon.textContent = original || 'search';
+                if (icon) icon.textContent = 'search';
             }
         }
     }
 
-    initUserLabel();
+    const cityForm = document.getElementById('home-city-form');
+    if (cityForm) {
+        cityForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const raw = (searchInput && searchInput.value) || '';
+            if (!commitCitySelection(raw)) return;
+            const cityToFetch = ((searchInput && searchInput.value) || raw).trim();
+            queueMicrotask(() => {
+                void fetchForCity(cityToFetch, { askDefaultCity: true });
+            });
+        });
+    }
+
+    if (searchInput && suggestionsEl) {
+        searchInput.addEventListener('focus', () => {
+            void refreshSuggestionsFromInput();
+        });
+        searchInput.addEventListener('input', () => {
+            if (syncingSearchInput) return;
+            pendingCountry = '';
+            clearTimeout(suggestTimer);
+            suggestTimer = setTimeout(() => {
+                void refreshSuggestionsFromInput();
+            }, 120);
+        });
+        searchInput.addEventListener('blur', () => {
+            setTimeout(() => hideSuggestions(), 200);
+        });
+        searchInput.addEventListener('keydown', (e) => {
+            const opts = suggestionsEl.querySelectorAll('li[role="option"]');
+            const n = opts.length;
+            const listOpen = !suggestionsEl.hidden && n > 0;
+
+            if (e.key === 'Escape') {
+                if (!suggestionsEl.hidden) {
+                    e.preventDefault();
+                    hideSuggestions();
+                }
+                return;
+            }
+
+            if (!listOpen) return;
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                activeSuggestionIndex = activeSuggestionIndex < n - 1 ? activeSuggestionIndex + 1 : 0;
+                syncSuggestionHighlight();
+                opts[activeSuggestionIndex].scrollIntoView({ block: 'nearest' });
+                return;
+            }
+            if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                activeSuggestionIndex = activeSuggestionIndex > 0 ? activeSuggestionIndex - 1 : n - 1;
+                syncSuggestionHighlight();
+                opts[activeSuggestionIndex].scrollIntoView({ block: 'nearest' });
+                return;
+            }
+            if (e.key === 'Enter' && activeSuggestionIndex >= 0) {
+                e.preventDefault();
+                pickSuggestionAtIndex(activeSuggestionIndex);
+            }
+        });
+    }
+
     updateClock();
     setInterval(updateClock, 1000);
 
-    const startCity = defaultCityQuery();
-    if (searchInput && startCity) searchInput.value = startCity;
-    if (startCity) fetchForCity(startCity);
-
-    if (goBtn) goBtn.addEventListener('click', () => fetchForCity(searchInput && searchInput.value));
-    if (searchInput) {
-        searchInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') fetchForCity(searchInput.value);
-        });
+    try {
+        if (window.refreshWeatherwiseSessionFromServer) {
+            await window.refreshWeatherwiseSessionFromServer();
+        }
+    } catch (err) {
+        console.warn('Session refresh failed', err);
     }
+    initUserLabel();
+
+    const startCity = defaultCityQuery();
+    syncingSearchInput = true;
+    if (searchInput && startCity) searchInput.value = startCity;
+    if (locationText && startCity) locationText.textContent = startCity;
+    syncingSearchInput = false;
+    if (startCity) fetchForCity(startCity);
 
     if (btnOpenFeel && feelPanel) {
         btnOpenFeel.addEventListener('click', () => {
@@ -218,17 +623,89 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    function feelLoginCtaHtml(lead) {
+        const prefix = lead || 'Please';
+        return `${prefix} <a href="login.html" style="font-weight:700;color:inherit;">log in</a> to leave community reports.`;
+    }
+
+    function currentReportCity() {
+        const loc = locationText && locationText.textContent.trim();
+        if (loc && loc !== '—') return loc;
+        const fromSearch = searchInput && searchInput.value.trim();
+        if (fromSearch) return fromSearch;
+        return defaultCityQuery();
+    }
+
+    function setFeelButtonsDisabled(disabled) {
+        document.querySelectorAll('.home-feel-btns [data-feel]').forEach((b) => {
+            b.disabled = disabled;
+        });
+    }
+
+    let feelSubmitting = false;
+
     document.querySelectorAll('.home-feel-btns [data-feel]').forEach((btn) => {
-        btn.addEventListener('click', () => {
-            const s = window.WeatherwiseSession && window.WeatherwiseSession.get();
+        btn.addEventListener('click', async () => {
             if (!feelResult) return;
-            if (!s || s.mode === 'guest') {
-                feelResult.innerHTML =
-                    'Please <a href="login.html" style="font-weight:700;color:inherit;">log in</a> to leave community reports.';
+            const s = window.WeatherwiseSession && window.WeatherwiseSession.get();
+            if (!s || s.mode === 'guest' || !s.token) {
+                feelResult.innerHTML = feelLoginCtaHtml('Please');
                 return;
             }
-            feelResult.textContent =
-                'Thanks — your report helps us give better advice! (Feed / persistence coming later.)';
+            const rating = btn.getAttribute('data-feel');
+            if (!rating) return;
+            const city = currentReportCity().trim();
+            if (!city) {
+                feelResult.textContent = 'Load a city first, then share how it feels.';
+                return;
+            }
+            if (feelSubmitting) return;
+            feelSubmitting = true;
+            setFeelButtonsDisabled(true);
+            feelResult.textContent = 'Sending…';
+            try {
+                const res = await fetch(`${apiBase()}/report`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${s.token}`,
+                    },
+                    body: JSON.stringify({ city, rating }),
+                });
+                let body = {};
+                try {
+                    body = await res.json();
+                } catch (_) {
+                    body = {};
+                }
+                if (res.status === 401) {
+                    feelResult.innerHTML = feelLoginCtaHtml('Session expired — please');
+                    return;
+                }
+                if (!res.ok) {
+                    let msg = typeof body.detail === 'string' ? body.detail : '';
+                    if (!msg && Array.isArray(body.detail)) {
+                        msg = body.detail
+                            .map((x) => (x && (x.msg || x.message)) || '')
+                            .filter(Boolean)
+                            .join(' ');
+                    }
+                    feelResult.textContent = msg || `Could not save report (${res.status}).`;
+                    return;
+                }
+                feelResult.textContent = 'Thanks — your report was saved and helps tune advice for others.';
+            } catch (err) {
+                let msg = err && err.message ? err.message : 'Connection error.';
+                if (msg === 'Failed to fetch') {
+                    msg =
+                        'Could not reach the API (network error). Start the backend on port 8000, ' +
+                        'or open the app from the same host as the API.';
+                }
+                feelResult.textContent = msg;
+            } finally {
+                feelSubmitting = false;
+                setFeelButtonsDisabled(false);
+            }
         });
     });
 
