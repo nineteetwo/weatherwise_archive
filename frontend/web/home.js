@@ -29,6 +29,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     let currentCityOffset = null;
+    /** @type {Record<string, unknown> | null} */
+    let lastRecommendPayload = null;
+    let chatAutostartDone = false;
     let cityFetchAbort = null;
     let cityFetchInflight = 0;
     let placesCountries = null;
@@ -497,6 +500,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (tip) tip.textContent = data.tip_text || '—';
 
             renderHourly(data.forecast_24h || []);
+            lastRecommendPayload = data;
 
             const sess = window.WeatherwiseSession && window.WeatherwiseSession.get();
             if (
@@ -714,7 +718,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     function refreshChatStub() {
         if (!chatStubEl) return;
         const params = new URLSearchParams(location.search);
-        const qFromUrl = (params.get('q') || '').trim();
+        const qFromUrl = (params.get('q') || params.get('question') || '').trim();
         const cityFromUrl = (params.get('city') || '').trim();
         const q =
             qFromUrl ||
@@ -729,6 +733,129 @@ document.addEventListener('DOMContentLoaded', async () => {
         chatStubEl.textContent = city
             ? `City: ${city}. ${q ? `Question: “${q}”.` : 'Ask anything about the weather.'}`
             : 'Pick a city on Home to personalize chat context.';
+    }
+
+    const chatTranscript = document.getElementById('home-chat-transcript');
+    const chatEmpty = document.getElementById('home-chat-empty');
+    const chatTyping = document.getElementById('home-chat-typing');
+    const chatForm = document.getElementById('home-chat-form');
+    const homeChatInputEl = document.getElementById('home-chat-input');
+    const homeChatSendBtn = document.getElementById('home-chat-send');
+    const feedList = document.getElementById('home-feed-list');
+    const feedStatus = document.getElementById('home-feed-status');
+
+    function hideChatEmpty() {
+        if (chatEmpty) chatEmpty.hidden = true;
+    }
+
+    function appendChatBubble(text, role) {
+        if (!chatTranscript) return;
+        hideChatEmpty();
+        const div = document.createElement('div');
+        div.className = `home-chat-bubble home-chat-bubble--${role}`;
+        div.textContent = text;
+        chatTranscript.appendChild(div);
+        chatTranscript.scrollTop = chatTranscript.scrollHeight;
+    }
+
+    function setChatTyping(on) {
+        if (chatTyping) chatTyping.hidden = !on;
+    }
+
+    async function sendChatMessage() {
+        const question = (homeChatInputEl && homeChatInputEl.value) ? homeChatInputEl.value.trim() : '';
+        if (!question) return;
+
+        const city = (locationText && locationText.textContent.trim()) || defaultCityQuery() || '';
+        if (!city || city === '—') {
+            alert('Please search for a city first on the Home tab!');
+            return;
+        }
+
+        if (homeChatInputEl) homeChatInputEl.value = '';
+        appendChatBubble(question, 'user');
+        setChatTyping(true);
+        if (homeChatSendBtn) homeChatSendBtn.disabled = true;
+
+        try {
+            const res = await fetch(`${apiBase()}/chat/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ city, question }),
+            });
+            if (!res.ok) throw new Error(`Server error (${res.status})`);
+            const data = await res.json();
+            appendChatBubble(data.answer || 'No answer received.', 'ai');
+        } catch (err) {
+            appendChatBubble(`❌ ${err.message || 'Connection error.'}`, 'ai');
+        } finally {
+            setChatTyping(false);
+            if (homeChatSendBtn) homeChatSendBtn.disabled = false;
+            if (homeChatInputEl) homeChatInputEl.focus();
+        }
+    }
+
+    function maybeAutostartChatFromUrl() {
+        if (chatAutostartDone || !homeChatInputEl) return;
+        const params = new URLSearchParams(location.search);
+        if (params.get('autostart') !== '1') return;
+        const q = (params.get('q') || params.get('question') || '').trim();
+        if (!q) return;
+        chatAutostartDone = true;
+        homeChatInputEl.value = q;
+        void sendChatMessage();
+    }
+
+    function renderFeedFromCache() {
+        if (!feedList) return;
+        if (!lastRecommendPayload) {
+            if (feedStatus) feedStatus.textContent = 'Load a city on Home to see hourly data here.';
+            feedList.innerHTML = '';
+            return;
+        }
+        if (feedStatus) feedStatus.textContent = '';
+        const rows = lastRecommendPayload.forecast_24h || [];
+        feedList.innerHTML = '';
+        if (!rows.length) {
+            feedList.innerHTML = '<li class="home-hourly-placeholder">No hourly rows yet.</li>';
+            return;
+        }
+        rows.slice(0, 24).forEach((row) => {
+            const li = document.createElement('li');
+            li.className = 'home-feed-row';
+            let timeLabel = row.time || '';
+            if (timeLabel && timeLabel.includes('T')) {
+                const d = new Date(timeLabel);
+                if (!Number.isNaN(d.getTime())) {
+                    timeLabel = d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+                }
+            }
+            const temp = row.temperature != null ? `${Math.round(row.temperature)}°C` : '—';
+            const eff = row.weather_effect || '';
+            li.textContent = `${timeLabel}  ${temp}  ${eff}`;
+            feedList.appendChild(li);
+        });
+    }
+
+    document.querySelectorAll('.home-chat-chip').forEach((btn) => {
+        btn.addEventListener('click', () => {
+            const fill = btn.getAttribute('data-chat-fill');
+            const send = btn.getAttribute('data-chat-send');
+            if (fill && homeChatInputEl) {
+                homeChatInputEl.value = fill;
+                homeChatInputEl.focus();
+            } else if (send && homeChatInputEl) {
+                homeChatInputEl.value = send;
+                void sendChatMessage();
+            }
+        });
+    });
+
+    if (chatForm) {
+        chatForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            void sendChatMessage();
+        });
     }
 
     const track = document.getElementById('app-track');
@@ -773,7 +900,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
         document.title = titles[n] || titles[0];
-        if (n === 1) refreshChatStub();
+        if (n === 1) {
+            refreshChatStub();
+            maybeAutostartChatFromUrl();
+        }
+        if (n === 3) renderFeedFromCache();
     }
 
     tabButtons.forEach((btn) => {
