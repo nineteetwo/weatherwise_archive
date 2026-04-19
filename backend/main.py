@@ -2,8 +2,10 @@ import sys
 from pathlib import Path
 
 _here = Path(__file__).parent.resolve()
-sys.path.insert(0, str(_here))
+# Repo root first, then backend so `backend` is sys.path[0] and `import rag` resolves to backend/rag
+# (there is also a top-level rag/ tree; order must not pick that by accident).
 sys.path.insert(0, str(_here.parent))
+sys.path.insert(0, str(_here))
 
 from dotenv import load_dotenv
 
