@@ -16,7 +16,7 @@ def _ollama_base_url() -> str:
 
 
 def _ollama_model() -> str:
-    return (os.getenv("OLLAMA_MODEL") or "llama3").strip() or "llama3"
+    return (os.getenv("OLLAMA_MODEL") or "PhanarAi").strip() or "PhanarAi"
 
 
 def _make_ollama() -> ChatOllama:

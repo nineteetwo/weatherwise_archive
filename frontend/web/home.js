@@ -721,28 +721,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     });
 
-    const chatStubEl = document.getElementById('chat-stub-context');
-
-    function refreshChatStub() {
-        if (!chatStubEl) return;
-        const params = new URLSearchParams(location.search);
-        const qFromUrl = (params.get('q') || params.get('question') || '').trim();
-        const cityFromUrl = (params.get('city') || '').trim();
-        const q =
-            qFromUrl ||
-            (chatPrefill && chatPrefill.value.trim()) ||
-            '';
-        const cityRaw =
-            cityFromUrl ||
-            (locationText && locationText.textContent.trim()) ||
-            defaultCityQuery() ||
-            '';
-        const city = cityRaw && cityRaw !== '—' ? cityRaw : '';
-        chatStubEl.textContent = city
-            ? `City: ${city}. ${q ? `Question: “${q}”.` : 'Ask anything about the weather.'}`
-            : 'Pick a city on Home to personalize chat context.';
-    }
-
     const chatTranscript = document.getElementById('home-chat-transcript');
     const chatEmpty = document.getElementById('home-chat-empty');
     const chatTyping = document.getElementById('home-chat-typing');
@@ -845,20 +823,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    document.querySelectorAll('.home-chat-chip').forEach((btn) => {
-        btn.addEventListener('click', () => {
-            const fill = btn.getAttribute('data-chat-fill');
-            const send = btn.getAttribute('data-chat-send');
-            if (fill && homeChatInputEl) {
-                homeChatInputEl.value = fill;
-                homeChatInputEl.focus();
-            } else if (send && homeChatInputEl) {
-                homeChatInputEl.value = send;
-                void sendChatMessage();
-            }
-        });
-    });
-
     if (chatForm) {
         chatForm.addEventListener('submit', (e) => {
             e.preventDefault();
@@ -909,7 +873,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         document.title = titles[n] || titles[0];
         if (n === 1) {
-            refreshChatStub();
             maybeAutostartChatFromUrl();
         }
         if (n === 3) renderFeedFromCache();
@@ -948,7 +911,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (btnOpenChat) {
         btnOpenChat.addEventListener('click', () => {
-            refreshChatStub();
+            const pre = chatPrefill && chatPrefill.value.trim();
+            if (pre && homeChatInputEl && !homeChatInputEl.value.trim()) {
+                homeChatInputEl.value = pre;
+            }
             if (appViewIndex !== 1) setAppView(1);
         });
     }

@@ -1,5 +1,17 @@
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
 
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
 :root {
     --ui-text: #ffffff;
     --ui-inverse-text: #000000;
@@ -1105,22 +1117,6 @@ body.time-noon .home-input {
     gap: 8px;
 }
 
-.home-chat-chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-}
-
-.home-chat-chip {
-    font-size: 12px;
-    padding: 6px 10px;
-    border-radius: 999px;
-    cursor: pointer;
-    border: 1px solid var(--ui-glass-border);
-    background: rgba(255, 255, 255, 0.08);
-    color: inherit;
-}
-
 .home-chat-composer {
     display: flex;
     gap: 10px;
@@ -1130,6 +1126,48 @@ body.time-noon .home-input {
 .home-chat-input {
     flex: 1;
     min-width: 0;
+    padding: 12px 18px;
+    border-radius: 999px;
+    border: 1px solid var(--ui-glass-border);
+    background: var(--ui-glass-bg);
+    color: var(--ui-text);
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 1.35;
+    outline: none;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    caret-color: var(--ui-text);
+    transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.home-chat-input::placeholder {
+    color: var(--placeholder-color);
+}
+
+.home-chat-input:focus {
+    border-color: rgba(255, 255, 255, 0.35);
+    background: var(--ui-glass-hover);
+}
+
+body.home-page.time-morning .home-chat-input:focus,
+body.home-page.time-noon .home-chat-input:focus {
+    border-color: rgba(12, 19, 45, 0.22);
+    background: rgba(255, 255, 255, 0.45);
+}
+
+.home-chat-send {
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border-radius: 50%;
+    justify-content: center;
+    box-shadow: none;
+}
+
+.home-chat-send .material-symbols-outlined {
+    font-size: 22px;
 }
 
 .home-feed-list {

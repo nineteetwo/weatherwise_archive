@@ -137,22 +137,15 @@
                 <main class="app-panel-scroll app-panel-scroll--chat">
                     <div class="glass-panel auth-container app-panel-card home-chat-card">
                         <h2 class="logo-font auth-title">Chat</h2>
-                        <p id="chat-stub-context" class="app-panel-lead"></p>
                         <div class="home-chat-shell">
                             <div class="home-chat-transcript-wrap">
                                 <div id="home-chat-transcript" class="home-chat-transcript" role="log" aria-relevant="additions" aria-live="polite">
-                                    <p id="home-chat-empty" class="home-chat-empty">Ask a question or use a quick chip — answers use your loaded city.</p>
+                                    <p id="home-chat-empty" class="home-chat-empty">Ask about the weather — answers use the city you loaded on Home.</p>
                                 </div>
                             </div>
                             <div id="home-chat-typing" class="home-chat-typing" hidden>
                                 <span class="home-chat-typing-dots" aria-hidden="true"><span></span><span></span><span></span></span>
                                 <span class="home-chat-typing-label">Assistant is typing…</span>
-                            </div>
-                            <div class="home-chat-chips" role="group" aria-label="Quick prompts">
-                                <button type="button" class="home-chat-chip" data-chat-fill="What should I wear for the rest of the day?">Fill: outfit</button>
-                                <button type="button" class="home-chat-chip" data-chat-fill="Is a light jacket enough this evening?">Fill: jacket</button>
-                                <button type="button" class="home-chat-chip" data-chat-send="Do I need an umbrella in the next few hours?">Send: umbrella</button>
-                                <button type="button" class="home-chat-chip" data-chat-send="How suitable is it to be outside right now?">Send: outdoors</button>
                             </div>
                             <form class="home-chat-composer" id="home-chat-form" autocomplete="off">
                                 <label class="visually-hidden" for="home-chat-input">Message</label>
