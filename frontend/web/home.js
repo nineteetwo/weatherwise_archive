@@ -57,7 +57,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             .filter((c) => c && c !== 'home-page' && !c.startsWith('time-') && !c.startsWith('weather-'))
             .join(' ');
         document.body.className = `home-page ${keep} time-${timeSlot} weather-${weatherEffect}`.trim();
-
         const icons = WEATHER_ICONS[weatherEffect] || WEATHER_ICONS.clear;
         const isNight = timeSlot === 'night' || timeSlot === 'evening';
         if (weatherIconEl) weatherIconEl.textContent = isNight ? icons.night : icons.day;
@@ -98,14 +97,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     function initUserLabel() {
         const s = window.WeatherwiseSession && window.WeatherwiseSession.get();
         if (!userNameEl) return;
-        if (!s) {
-            userNameEl.textContent = 'Guest';
-            return;
-        }
-        if (s.mode === 'guest') {
-            userNameEl.textContent = 'Guest';
-            return;
-        }
+        if (!s) { userNameEl.textContent = 'Guest'; return; }
+        if (s.mode === 'guest') { userNameEl.textContent = 'Guest'; return; }
         userNameEl.textContent = s.displayName || s.name || s.email || 'You';
     }
 
@@ -120,8 +113,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!hourlyList) return;
         hourlyList.innerHTML = '';
         if (!rows || !rows.length) {
-            hourlyList.innerHTML =
-                '<li class="home-hourly-placeholder">No hourly data yet.</li>';
+            hourlyList.innerHTML = '<li class="home-hourly-placeholder">No hourly data yet.</li>';
             return;
         }
         rows.slice(0, 24).forEach((row) => {
@@ -143,10 +135,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     async function fetchForCity(city) {
         city = (city || '').trim();
-        if (!city) {
-            alert('Please enter a city name.');
-            return;
-        }
+        if (!city) { alert('Please enter a city name.'); return; }
 
         const original = goBtn?.querySelector('.material-symbols-outlined')?.textContent;
         if (goBtn) {
@@ -174,13 +163,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (window.setWeatherEffect) window.setWeatherEffect(data.weather_effect || 'clear');
             updateClock();
 
-            const c = document.getElementById('home-ai-clothing');
-            const u = document.getElementById('home-ai-umbrella');
-            const sc = document.getElementById('home-ai-score');
+            const c   = document.getElementById('home-ai-clothing');
+            const u   = document.getElementById('home-ai-umbrella');
+            const sc  = document.getElementById('home-ai-score');
             const tip = document.getElementById('home-ai-tip');
-            if (c) c.textContent = data.clothing_recommendation || '—';
-            if (u) u.textContent = data.umbrella_needed ? 'Yes ☂️' : 'No';
-            if (sc) sc.textContent = `${data.suitability_score}/10`;
+            if (c)   c.textContent  = data.clothing_recommendation || '—';
+            if (u)   u.textContent  = data.umbrella_needed ? 'Yes ☂️' : 'No';
+            if (sc)  sc.textContent = `${data.suitability_score}/10`;
             if (tip) tip.textContent = data.tip_text || '—';
 
             renderHourly(data.forecast_24h || []);
@@ -223,12 +212,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             const s = window.WeatherwiseSession && window.WeatherwiseSession.get();
             if (!feelResult) return;
             if (!s || s.mode === 'guest') {
-                feelResult.innerHTML =
-                    'Please <a href="login.html" style="font-weight:700;color:inherit;">log in</a> to leave community reports.';
+                feelResult.innerHTML = 'Please <a href="login.html" style="font-weight:700;color:inherit;">log in</a> to leave community reports.';
                 return;
             }
-            feelResult.textContent =
-                'Thanks — your report helps us give better advice! (Feed / persistence coming later.)';
+            feelResult.textContent = 'Thanks — your report helps us give better advice!';
         });
     });
 
@@ -239,18 +226,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const params = new URLSearchParams(location.search);
         const qFromUrl = (params.get('q') || '').trim();
         const cityFromUrl = (params.get('city') || '').trim();
-        const q =
-            qFromUrl ||
-            (chatPrefill && chatPrefill.value.trim()) ||
-            '';
-        const cityRaw =
-            cityFromUrl ||
-            (locationText && locationText.textContent.trim()) ||
-            defaultCityQuery() ||
-            '';
+        const q = qFromUrl || (chatPrefill && chatPrefill.value.trim()) || '';
+        const cityRaw = cityFromUrl || (locationText && locationText.textContent.trim()) || defaultCityQuery() || '';
         const city = cityRaw && cityRaw !== '—' ? cityRaw : '';
         chatStubEl.textContent = city
-            ? `City: ${city}. ${q ? `Question: “${q}”.` : 'Ask anything about the weather.'}`
+            ? `City: ${city}. ${q ? `Question: "${q}".` : 'Ask anything about the weather.'}`
             : 'Pick a city on Home to personalize chat context.';
     }
 
@@ -334,6 +314,79 @@ document.addEventListener('DOMContentLoaded', async () => {
         btnOpenChat.addEventListener('click', () => {
             refreshChatStub();
             if (appViewIndex !== 1) setAppView(1);
+        });
+    }
+
+    // ==========================================
+    // CHAT UI — POST /chat/
+    // ==========================================
+    const chatMessages = document.getElementById('chat-messages');
+    const chatInput    = document.getElementById('chat-input');
+    const chatSendBtn  = document.getElementById('chat-send-btn');
+
+    function addMessage(text, role = 'user') {
+        if (!chatMessages) return;
+        const div = document.createElement('div');
+        div.className = `chat-msg chat-msg--${role}`;
+        div.textContent = text;
+        div.style.cssText = role === 'user'
+            ? 'background:rgba(255,255,255,0.2);padding:12px 16px;border-radius:16px;border-bottom-right-radius:4px;max-width:85%;align-self:flex-end;'
+            : 'background:rgba(255,255,255,0.1);padding:12px 16px;border-radius:16px;border-bottom-left-radius:4px;max-width:85%;align-self:flex-start;';
+        chatMessages.appendChild(div);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function addTyping() {
+        const div = document.createElement('div');
+        div.id = 'chat-typing';
+        div.textContent = '...';
+        div.style.cssText = 'background:rgba(255,255,255,0.1);padding:12px 16px;border-radius:16px;border-bottom-left-radius:4px;max-width:85%;align-self:flex-start;opacity:0.6;';
+        chatMessages?.appendChild(div);
+        if (chatMessages) chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function removeTyping() {
+        document.getElementById('chat-typing')?.remove();
+    }
+
+    async function sendChatMessage() {
+        const question = (chatInput?.value || '').trim();
+        if (!question) return;
+
+        const city = (locationText?.textContent || '').trim() || defaultCityQuery();
+        if (!city || city === '—') {
+            alert('Please search for a city first on the Home tab!');
+            return;
+        }
+
+        chatInput.value = '';
+        addMessage(question, 'user');
+        addTyping();
+        if (chatSendBtn) chatSendBtn.disabled = true;
+
+        try {
+            const res = await fetch('/chat/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ city, question })
+            });
+            if (!res.ok) throw new Error(`Server error (${res.status})`);
+            const data = await res.json();
+            removeTyping();
+            addMessage(data.answer || 'No answer received.', 'ai');
+        } catch (err) {
+            removeTyping();
+            addMessage(`❌ ${err.message || 'Connection error.'}`, 'ai');
+        } finally {
+            if (chatSendBtn) chatSendBtn.disabled = false;
+            chatInput?.focus();
+        }
+    }
+
+    if (chatSendBtn) chatSendBtn.addEventListener('click', sendChatMessage);
+    if (chatInput) {
+        chatInput.addEventListener('keypress', e => {
+            if (e.key === 'Enter') sendChatMessage();
         });
     }
 });
