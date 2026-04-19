@@ -1,4 +1,6 @@
 import asyncio
+import time
+
 import requests
 from fastapi import HTTPException
 
@@ -13,14 +15,30 @@ HOURLY_FIELDS = (
     "wind_speed_10m,cloud_cover,weather_code"
 )
 
+_session = requests.Session()
+_session.headers.update({"Accept-Encoding": "gzip"})
+
+
+def _get_with_retry(url: str, params: dict, timeout: int = 8, retries: int = 3) -> dict:
+    last_err = None
+    for attempt in range(retries):
+        try:
+            res = _session.get(url, params=params, timeout=timeout)
+            res.raise_for_status()
+            return res.json()
+        except requests.RequestException as e:
+            last_err = e
+            if attempt < retries - 1:
+                time.sleep(0.5 * (attempt + 1))
+    raise last_err
+
 
 def _geocode(city_name: str) -> dict:
     try:
-        geo_res = requests.get(
+        geo_res = _get_with_retry(
             "https://geocoding-api.open-meteo.com/v1/search",
             params={"name": city_name, "count": 1, "language": "en"},
-            timeout=6,
-        ).json()
+        )
     except requests.RequestException:
         raise HTTPException(status_code=503, detail="Geocoding service unavailable")
 
@@ -39,7 +57,7 @@ def _geocode(city_name: str) -> dict:
 
 def _forecast(lat: float, lon: float) -> dict:
     try:
-        w_res = requests.get(
+        w_res = _get_with_retry(
             "https://api.open-meteo.com/v1/forecast",
             params={
                 "latitude": lat,
@@ -49,8 +67,7 @@ def _forecast(lat: float, lon: float) -> dict:
                 "forecast_hours": 24,
                 "timezone": "auto",
             },
-            timeout=6,
-        ).json()
+        )
     except requests.RequestException:
         raise HTTPException(status_code=503, detail="Weather service unavailable")
 

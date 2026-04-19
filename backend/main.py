@@ -20,7 +20,6 @@ from rag.recommend import router as rec_router
 from routers.auth import router as auth_router
 from routers.report import router as report_router
 from services.predictor import predictor
-
 from db import init_db
 
 app = FastAPI(title="WeatherWise API", version="2.0.0")
@@ -64,6 +63,13 @@ async def root():
 
 if _WEB_DIR.is_dir():
     app.mount("/", StaticFiles(directory=str(_WEB_DIR), html=True), name="web")
+else:
+    alt_path = _here.parent / "frontend"
+    if alt_path.is_dir():
+        app.mount("/", StaticFiles(directory=str(alt_path), html=True), name="web")
+    else:
+        print(f"⚠️ Warning: Frontend directory not found at {_WEB_DIR}")
+
 
 if __name__ == "__main__":
     import uvicorn

@@ -96,6 +96,57 @@ class WeatherPredictor:
             traceback.print_exc()
             return self._fallback(f)
 
+    # 🚀 الدالة الجديدة السريعة (Batching)
+    def predict_batch(self, features_list: list[dict]) -> list[dict]:
+        """يعمل DataFrame واحد لكل الساعات بدل تكراره 24 مرة"""
+        if not self.is_loaded:
+            return [self._fallback(f) for f in features_list]
+
+        try:
+            import pandas as pd
+            
+            # بناء 3 جداول فقط للـ 24 ساعة كلها
+            schema_c = self.schemas.get("clothing", {})
+            f_names_c = schema_c.get("features")
+            df_c = pd.DataFrame([{k: f.get(k) for k in f_names_c} for f in features_list], columns=f_names_c) if f_names_c else pd.DataFrame(features_list)
+
+            schema_u = self.schemas.get("umbrella", {})
+            f_names_u = schema_u.get("features")
+            df_u = pd.DataFrame([{k: f.get(k) for k in f_names_u} for f in features_list], columns=f_names_u) if f_names_u else pd.DataFrame(features_list)
+
+            schema_s = self.schemas.get("suitability", {})
+            f_names_s = schema_s.get("features")
+            df_s = pd.DataFrame([{k: f.get(k) for k in f_names_s} for f in features_list], columns=f_names_s) if f_names_s else pd.DataFrame(features_list)
+
+            # تنفيذ التوقع دفعة واحدة
+            c_preds = self.models["clothing"].predict(df_c)
+            
+            umbrella_model = self.models["umbrella"]
+            if hasattr(umbrella_model, "predict_proba"):
+                probs = umbrella_model.predict_proba(df_u)[:, 1]
+                u_preds = probs >= self.umbrella_threshold
+            else:
+                u_preds = umbrella_model.predict(df_u)
+                
+            s_preds = self.models["suitability"].predict(df_s)
+
+            # تجميع النتائج
+            results = []
+            for i in range(len(features_list)):
+                s_score = float(s_preds[i])
+                results.append({
+                    "umbrella_needed": bool(u_preds[i]),
+                    "clothing_recommendation": str(c_preds[i]),
+                    "suitability_score": round(s_score, 2),
+                    "go_or_no": s_score >= 6.0,
+                    "mode": "ml",
+                })
+            return results
+
+        except Exception:
+            traceback.print_exc()
+            return [self._fallback(f) for f in features_list]
+
     def _fallback(self, f: dict) -> dict:
         temp = float(f.get("temperature_c", 20))
         precip = float(f.get("precipitation_mm", 0))
