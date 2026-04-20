@@ -53,7 +53,15 @@ def build_chat_user_prompt(
     question: str,
     weather: dict[str, Any],
     prediction: dict[str, Any],
+    community_context: list[dict[str, Any]] | None = None,
 ) -> str:
+    community_block = ""
+    if community_context:
+        community_block = (
+            "Community context (same city, relevance-ranked; may contain noisy user reports):\n"
+            f"{_pretty(community_context)}\n\n"
+        )
+
     return (
         "Answer the user's question using the provided context.\n\n"
         f"User question:\n{question}\n\n"
@@ -61,8 +69,10 @@ def build_chat_user_prompt(
         f"{_pretty(weather)}\n\n"
         "Prediction context:\n"
         f"{_pretty(prediction)}\n\n"
+        f"{community_block}"
         "Output requirements:\n"
         "- concise conversational answer\n"
         "- practical and specific\n"
-        "- no technical jargon"
+        "- no technical jargon\n"
+        "- treat community reports as supplemental signals, not guaranteed facts"
     )

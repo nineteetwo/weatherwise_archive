@@ -682,7 +682,7 @@ button.home-tab {
     margin-top: 4px;
 }
 
-.home-24h .home-hourly-list {
+.home-hourly-list {
     list-style: none;
     margin: 0;
     padding: 0;
@@ -691,6 +691,10 @@ button.home-tab {
     display: flex;
     flex-direction: column;
     gap: 8px;
+}
+
+.myday-hourly-list {
+    max-height: min(72vh, 620px);
 }
 
 .home-hourly-placeholder {
@@ -718,6 +722,29 @@ body.time-noon .home-hourly-row {
     text-transform: capitalize;
     opacity: 0.85;
     font-size: 12px;
+}
+
+.home-hourly-cond {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 9px;
+    border-radius: 999px;
+    border: 1px solid var(--ui-glass-border);
+    background: rgba(255, 255, 255, 0.08);
+    justify-self: end;
+    text-transform: none;
+    opacity: 0.95;
+}
+
+body.time-morning .home-hourly-cond,
+body.time-noon .home-hourly-cond {
+    background: rgba(255, 255, 255, 0.45);
+}
+
+.home-hourly-icon {
+    line-height: 1;
+    font-size: 14px;
 }
 
 .home-input {
@@ -751,6 +778,12 @@ body.time-noon .home-input {
     border-radius: 20px;
 }
 
+.home-feel-note {
+    min-height: 88px;
+    margin: 10px 0 0;
+    resize: vertical;
+}
+
 .home-feel-btns {
     display: flex;
     flex-wrap: wrap;
@@ -758,10 +791,121 @@ body.time-noon .home-input {
     margin-top: 12px;
 }
 
+.home-feel-btns .glass-btn.is-selected {
+    border-color: rgba(255, 255, 255, 0.7);
+    background: rgba(255, 255, 255, 0.24);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22);
+}
+
+.home-feel-post-btn {
+    margin-top: 12px;
+    min-width: 170px;
+    border-color: rgba(71, 132, 255, 0.65);
+    background: linear-gradient(135deg, rgba(53, 118, 255, 0.9), rgba(84, 154, 255, 0.85));
+    color: #f6fbff;
+    font-weight: 700;
+}
+
+.home-feel-post-btn:hover {
+    border-color: rgba(108, 165, 255, 0.9);
+    background: linear-gradient(135deg, rgba(67, 129, 255, 0.95), rgba(109, 174, 255, 0.9));
+}
+
 .home-feel-result {
     margin-top: 14px;
     font-size: 14px;
     line-height: 1.5;
+}
+
+.feed-panel-card {
+    max-width: 760px;
+}
+
+.feed-controls {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+    align-items: center;
+}
+
+.feed-city-input {
+    margin: 0;
+    flex: 1;
+}
+
+.feed-status {
+    margin-top: 12px;
+    min-height: 20px;
+}
+
+.feed-report-list {
+    list-style: none;
+    margin: 12px 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.feed-report-item {
+    background: rgba(0, 0, 0, 0.12);
+    border: 1px solid var(--ui-glass-border);
+    border-radius: 12px;
+    padding: 10px 12px;
+}
+
+body.time-morning .feed-report-item,
+body.time-noon .feed-report-item {
+    background: rgba(255, 255, 255, 0.35);
+}
+
+.feed-report-top {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 13px;
+    opacity: 0.9;
+}
+
+.feed-report-feel {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    text-transform: capitalize;
+    font-weight: 700;
+}
+
+.feed-report-feel.feel-accurate {
+    color: #0b5d35;
+    background: rgba(74, 222, 128, 0.3);
+    border-color: rgba(34, 197, 94, 0.45);
+}
+
+.feed-report-feel.feel-colder {
+    color: #0a4f70;
+    background: rgba(56, 189, 248, 0.28);
+    border-color: rgba(14, 165, 233, 0.45);
+}
+
+.feed-report-feel.feel-warmer {
+    color: #7a2e0e;
+    background: rgba(251, 146, 60, 0.28);
+    border-color: rgba(249, 115, 22, 0.45);
+}
+
+.feed-report-feel[class*="feel-"]:not(.feel-accurate):not(.feel-colder):not(.feel-warmer) {
+    color: var(--ui-text);
+    background: rgba(255, 255, 255, 0.2);
+    border-color: var(--ui-glass-border);
+}
+
+.feed-report-note {
+    margin: 8px 0 0;
+    font-size: 14px;
+    line-height: 1.45;
+    white-space: pre-wrap;
 }
 
 .home-bottom-nav {
@@ -806,7 +950,10 @@ body.time-noon .home-input {
     .home-grid {
         grid-template-columns: 1fr;
     }
-    .home-24h .home-hourly-list {
+    .home-hourly-list {
         max-height: 280px;
+    }
+    .myday-hourly-list {
+        max-height: 58vh;
     }
 }

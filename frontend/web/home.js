@@ -13,11 +13,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     const searchInput = document.getElementById('home-city-search');
     const goBtn = document.getElementById('home-city-go');
     const hourlyList = document.getElementById('home-hourly-list');
+    const mydayHourlyList = document.getElementById('myday-hourly-list');
+    const mydayLead = document.getElementById('myday-lead');
     const feelPanel = document.getElementById('home-feel-panel');
     const btnOpenFeel = document.getElementById('btn-open-feel');
     const feelResult = document.getElementById('home-feel-result');
+    const feelNote = document.getElementById('home-feel-note');
+    const feelPostBtn = document.getElementById('home-feel-post-btn');
+    const feelOptionButtons = Array.from(document.querySelectorAll('.home-feel-btns [data-feel]'));
     const chatPrefill = document.getElementById('home-chat-prefill');
     const btnOpenChat = document.getElementById('home-open-chat');
+    const feedCityInput = document.getElementById('feed-city-input');
+    const feedRefreshBtn = document.getElementById('feed-refresh-btn');
+    const feedReportList = document.getElementById('feed-report-list');
+    const feedStatus = document.getElementById('feed-status');
 
     const hamburgerBtn = document.getElementById('hamburger-btn');
     const navRight = document.getElementById('nav-right');
@@ -31,6 +40,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     let currentCityOffset = null;
+    let selectedFeel = '';
 
     const WEATHER_ICONS = {
         clear: { day: 'clear_day', night: 'clear_night' },
@@ -109,11 +119,29 @@ document.addEventListener('DOMContentLoaded', async () => {
         return last ? last.trim() : '';
     }
 
-    function renderHourly(rows) {
-        if (!hourlyList) return;
-        hourlyList.innerHTML = '';
+    function getSessionToken() {
+        const s = window.WeatherwiseSession && window.WeatherwiseSession.get();
+        if (!s || s.mode === 'guest' || !s.token) return '';
+        return String(s.token);
+    }
+
+    function hourlyEffectMeta(effectRaw) {
+        const effect = String(effectRaw || '').toLowerCase();
+        if (effect.includes('thunder')) return { icon: '⛈️', label: 'Thunder' };
+        if (effect.includes('heavy-rain')) return { icon: '🌧️', label: 'Heavy rain' };
+        if (effect.includes('rain')) return { icon: '🌦️', label: 'Rain' };
+        if (effect.includes('snow')) return { icon: '❄️', label: 'Snow' };
+        if (effect.includes('fog') || effect.includes('mist')) return { icon: '🌫️', label: 'Fog' };
+        if (effect.includes('cloud')) return { icon: '☁️', label: 'Cloudy' };
+        if (effect.includes('clear') || !effect) return { icon: '☀️', label: 'Clear' };
+        return { icon: '🌤️', label: effect.replace(/[-_]+/g, ' ') || 'Weather' };
+    }
+
+    function renderHourly(rows, listEl) {
+        if (!listEl) return;
+        listEl.innerHTML = '';
         if (!rows || !rows.length) {
-            hourlyList.innerHTML = '<li class="home-hourly-placeholder">No hourly data yet.</li>';
+            listEl.innerHTML = '<li class="home-hourly-placeholder">No hourly data yet.</li>';
             return;
         }
         rows.slice(0, 24).forEach((row) => {
@@ -127,9 +155,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             }
             const temp = row.temperature != null ? `${Math.round(row.temperature)}°C` : '—';
-            const eff = row.weather_effect || '';
-            li.innerHTML = `<span class="home-hourly-time">${timeLabel}</span><span class="home-hourly-temp">${temp}</span><span class="home-hourly-eff">${eff}</span>`;
-            hourlyList.appendChild(li);
+            const eff = hourlyEffectMeta(row.weather_effect);
+            li.innerHTML = `<span class="home-hourly-time">${timeLabel}</span><span class="home-hourly-temp">${temp}</span><span class="home-hourly-eff home-hourly-cond"><span class="home-hourly-icon" aria-hidden="true">${eff.icon}</span><span>${eff.label}</span></span>`;
+            listEl.appendChild(li);
         });
     }
 
@@ -152,6 +180,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const data = await res.json();
             sessionStorage.setItem(LAST_CITY_KEY, data.city || city);
+            if (feedCityInput && (data.city || city)) feedCityInput.value = data.city || city;
 
             if (locationText) locationText.textContent = data.city;
             if (tempText) tempText.textContent = `${Math.round(data.temperature)}°C`;
@@ -172,7 +201,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (sc)  sc.textContent = `${data.suitability_score}/10`;
             if (tip) tip.textContent = data.tip_text || '—';
 
-            renderHourly(data.forecast_24h || []);
+            const rows = data.forecast_24h || [];
+            renderHourly(rows, hourlyList);
+            renderHourly(rows, mydayHourlyList);
+            if (mydayLead) {
+                mydayLead.textContent = rows.length
+                    ? `24h timeline for ${data.city || city}.`
+                    : `No hourly timeline available for ${data.city || city}.`;
+            }
         } catch (err) {
             console.error(err);
             alert(err.message || 'Connection error. Is the backend running?');
@@ -182,6 +218,69 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const icon = goBtn.querySelector('.material-symbols-outlined');
                 if (icon) icon.textContent = original || 'search';
             }
+        }
+    }
+
+    function renderFeed(items) {
+        if (!feedReportList) return;
+        feedReportList.innerHTML = '';
+        if (!items || !items.length) {
+            feedReportList.innerHTML = '<li class="home-hourly-placeholder">No reports yet for this city.</li>';
+            return;
+        }
+        items.forEach((item) => {
+            const li = document.createElement('li');
+            li.className = 'feed-report-item';
+            const created = item.created_at
+                ? new Date(String(item.created_at).replace(' ', 'T')).toLocaleString()
+                : '';
+            const author = item.user_name || 'User';
+            const note = (item.note || '').trim();
+            const top = document.createElement('div');
+            top.className = 'feed-report-top';
+            const feelEl = document.createElement('span');
+            const feelValue = String(item.feel || 'report').toLowerCase();
+            feelEl.className = `feed-report-feel feel-${feelValue}`;
+            feelEl.textContent = feelValue;
+            const metaEl = document.createElement('span');
+            metaEl.textContent = `${author}${created ? ` • ${created}` : ''}`;
+            top.appendChild(feelEl);
+            top.appendChild(metaEl);
+
+            const noteEl = document.createElement('p');
+            noteEl.className = 'feed-report-note';
+            if (note) {
+                noteEl.textContent = note;
+            } else {
+                noteEl.textContent = 'No note attached.';
+                noteEl.style.opacity = '0.75';
+            }
+
+            li.appendChild(top);
+            li.appendChild(noteEl);
+            feedReportList.appendChild(li);
+        });
+    }
+
+    async function loadFeed(cityArg) {
+        if (!feedStatus) return;
+        const cityRaw = (cityArg || (feedCityInput && feedCityInput.value) || defaultCityQuery() || '').trim();
+        if (!cityRaw) {
+            feedStatus.textContent = 'Pick a city on Home or type one here to load reports.';
+            renderFeed([]);
+            return;
+        }
+        feedStatus.textContent = `Loading reports for ${cityRaw}...`;
+        try {
+            const res = await fetch(`/community/reports?city=${encodeURIComponent(cityRaw)}&limit=30`);
+            const payload = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(payload.detail || `Server error (${res.status})`);
+            if (feedCityInput) feedCityInput.value = cityRaw;
+            renderFeed(payload.items || []);
+            feedStatus.textContent = `Showing ${payload.count || 0} report(s) for ${cityRaw}.`;
+        } catch (err) {
+            renderFeed([]);
+            feedStatus.textContent = err.message || 'Could not load reports right now.';
         }
     }
 
@@ -207,17 +306,88 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    document.querySelectorAll('.home-feel-btns [data-feel]').forEach((btn) => {
+    function updateFeelSelectionUI() {
+        feelOptionButtons.forEach((btn) => {
+            const isSelected = (btn.getAttribute('data-feel') || '') === selectedFeel;
+            btn.classList.toggle('is-selected', isSelected);
+            btn.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+        });
+    }
+
+    feelOptionButtons.forEach((btn) => {
         btn.addEventListener('click', () => {
+            selectedFeel = btn.getAttribute('data-feel') || '';
+            updateFeelSelectionUI();
+            if (feelResult) feelResult.textContent = 'Selection saved. Press "Post report" to submit.';
+        });
+    });
+
+    if (feelPostBtn) {
+        feelPostBtn.addEventListener('click', async () => {
             const s = window.WeatherwiseSession && window.WeatherwiseSession.get();
             if (!feelResult) return;
             if (!s || s.mode === 'guest') {
                 feelResult.innerHTML = 'Please <a href="login.html" style="font-weight:700;color:inherit;">log in</a> to leave community reports.';
                 return;
             }
-            feelResult.textContent = 'Thanks — your report helps us give better advice!';
+            if (!selectedFeel) {
+                feelResult.textContent = 'Please select how it feels first, then press Post report.';
+                return;
+            }
+
+            const token = getSessionToken();
+            if (!token) {
+                feelResult.textContent = 'Your session expired. Please sign in again.';
+                return;
+            }
+
+            const city = ((locationText && locationText.textContent) || defaultCityQuery() || '').trim();
+            if (!city || city === '—') {
+                feelResult.textContent = 'Please search for a city first so your report is city-specific.';
+                return;
+            }
+
+            const note = (feelNote && feelNote.value ? feelNote.value : '').trim();
+            feelPostBtn.disabled = true;
+            feelOptionButtons.forEach((btn) => { btn.disabled = true; });
+            try {
+                const res = await fetch('/community/reports', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({ city, feel: selectedFeel, note }),
+                });
+                const payload = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(payload.detail || `Server error (${res.status})`);
+                feelResult.textContent = 'Thanks — your report helps us give better advice!';
+                if (feelNote) feelNote.value = '';
+                selectedFeel = '';
+                updateFeelSelectionUI();
+                if (feedCityInput && !feedCityInput.value.trim()) feedCityInput.value = city;
+                loadFeed(city);
+            } catch (err) {
+                feelResult.textContent = err.message || 'Could not submit your report right now.';
+            } finally {
+                feelPostBtn.disabled = false;
+                feelOptionButtons.forEach((btn) => { btn.disabled = false; });
+            }
         });
-    });
+    }
+
+    if (feedRefreshBtn) {
+        feedRefreshBtn.addEventListener('click', () => loadFeed());
+    }
+    if (feedCityInput) {
+        if (!feedCityInput.value.trim()) {
+            const defaultCity = defaultCityQuery();
+            if (defaultCity) feedCityInput.value = defaultCity;
+        }
+        feedCityInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') loadFeed();
+        });
+    }
 
     const chatStubEl = document.getElementById('chat-stub-context');
 
@@ -277,6 +447,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         document.title = titles[n] || titles[0];
         if (n === 1) refreshChatStub();
+        if (n === 3) loadFeed();
     }
 
     tabButtons.forEach((btn) => {

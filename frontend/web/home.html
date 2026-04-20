@@ -117,11 +117,17 @@
 
                     <section class="glass-panel home-feel-panel" id="home-feel-panel" hidden>
                         <h4 class="home-card-title">How does it actually feel outside?</h4>
+                        <textarea
+                            id="home-feel-note"
+                            class="home-input home-feel-note"
+                            maxlength="280"
+                            placeholder="Optional note (e.g., Pool water is too cold for swimming right now)."></textarea>
                         <div class="home-feel-btns">
                             <button type="button" class="glass-btn" data-feel="colder">Colder than advice</button>
                             <button type="button" class="glass-btn" data-feel="accurate">Accurate</button>
                             <button type="button" class="glass-btn" data-feel="warmer">Warmer than advice</button>
                         </div>
+                        <button type="button" class="glass-btn home-feel-post-btn" id="home-feel-post-btn">Post report</button>
                         <div id="home-feel-result" class="home-feel-result"></div>
                     </section>
                 </main>
@@ -151,18 +157,29 @@
 
             <section class="app-panel app-panel--myday" id="app-panel-myday" aria-hidden="true">
                 <main class="app-panel-scroll">
-                    <div class="glass-panel auth-container app-panel-card">
+                    <div class="glass-panel home-card app-panel-card home-myday-card">
                         <h2 class="logo-font auth-title">My Day</h2>
-                        <p class="app-panel-lead">A focused 24h timeline view will live here (same data as Home).</p>
+                        <p class="app-panel-lead" id="myday-lead">Load a city on Home to see your full 24h timeline here.</p>
+                        <ul class="home-hourly-list myday-hourly-list" id="myday-hourly-list">
+                            <li class="home-hourly-placeholder">Hourly outlook appears after you load a city.</li>
+                        </ul>
                     </div>
                 </main>
             </section>
 
             <section class="app-panel app-panel--feed" id="app-panel-feed" aria-hidden="true">
                 <main class="app-panel-scroll">
-                    <div class="glass-panel auth-container app-panel-card">
+                    <div class="glass-panel auth-container app-panel-card feed-panel-card">
                         <h2 class="logo-font auth-title">Community feed</h2>
-                        <p class="app-panel-muted">Optional milestone — tips and reports from others.</p>
+                        <p class="app-panel-muted">Reports from people in your city.</p>
+                        <div class="feed-controls">
+                            <input type="text" id="feed-city-input" class="home-input feed-city-input" placeholder="City for feed filter">
+                            <button type="button" class="glass-btn" id="feed-refresh-btn">Refresh</button>
+                        </div>
+                        <div id="feed-status" class="app-panel-muted feed-status"></div>
+                        <ul id="feed-report-list" class="feed-report-list">
+                            <li class="home-hourly-placeholder">No reports loaded yet.</li>
+                        </ul>
                     </div>
                 </main>
             </section>

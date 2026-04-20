@@ -16,6 +16,7 @@ sys.path.insert(0, str(_here.parent))
 from rag.chat import router as chat_router
 from rag.recommend import router as rec_router
 from routers.auth import router as auth_router
+from routers.community import router as community_router
 from services.predictor import predictor
 from db import init_db
 
@@ -41,6 +42,7 @@ async def startup_event():
 app.include_router(rec_router)
 app.include_router(chat_router)
 app.include_router(auth_router)
+app.include_router(community_router)
 
 @app.get("/health")
 async def health():

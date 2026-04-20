@@ -10,6 +10,7 @@ from services.prompt_template import (
     build_chat_system_prompt,
     build_chat_user_prompt,
 )
+from rag.community_retrieval import retrieve_city_reports
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
@@ -52,11 +53,25 @@ async def chat(req: ChatRequest):
         "weather_raw":   weather_data["current_raw"],
     }
 
-    # 5. Prompt
-    system_prompt = build_chat_system_prompt()
-    user_prompt   = build_chat_user_prompt(question, weather_context, prediction)
+    # 5. Optional city-scoped community context for chat only
+    community_context = retrieve_city_reports(
+        city=weather_data["location"],
+        query=question,
+        k=4,
+        max_age_days=30,
+        min_score=0.1,
+    )
 
-    # 6. Fallback metin
+    # 6. Prompt
+    system_prompt = build_chat_system_prompt()
+    user_prompt = build_chat_user_prompt(
+        question,
+        weather_context,
+        prediction,
+        community_context=community_context,
+    )
+
+    # 7. Fallback metin
     umbrella_text = "Take an umbrella." if prediction.get("umbrella_needed") else "You likely do not need an umbrella."
     score_f = float(prediction.get("suitability_score", 7) or 7)
     if score_f >= 8:
@@ -74,7 +89,7 @@ async def chat(req: ChatRequest):
         f"{umbrella_text} {suitability_text}"
     )
 
-    # 7. LLM
+    # 8. LLM
     # ⚠️ التعديل الجراحي هنا: إضافة await
     llm_output = await generate_chat_answer(system_prompt, user_prompt, fallback_text)
 
