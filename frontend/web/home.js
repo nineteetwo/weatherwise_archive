@@ -137,6 +137,33 @@ document.addEventListener('DOMContentLoaded', async () => {
         return { icon: '🌤️', label: effect.replace(/[-_]+/g, ' ') || 'Weather' };
     }
 
+    function renderAdviceList(listEl, tipText) {
+        if (!listEl) return;
+        const emojiPool = ['💡', '🌤️', '✅', '🧥', '🕒'];
+        const rawParts = String(tipText || '').split(/\r?\n/);
+        const points = [];
+        rawParts.forEach((part) => {
+            const sentenceParts = part.match(/[^.!?]+[.!?]?/g);
+            if (sentenceParts && sentenceParts.length) {
+                sentenceParts.forEach((sentence) => {
+                    const cleaned = sentence.trim();
+                    if (cleaned) points.push(cleaned);
+                });
+                return;
+            }
+            const cleaned = part.trim();
+            if (cleaned) points.push(cleaned);
+        });
+        const safePoints = points.length ? points : ['Search a city to get guidance.'];
+
+        listEl.innerHTML = '';
+        safePoints.forEach((point, index) => {
+            const li = document.createElement('li');
+            li.textContent = `${emojiPool[index % emojiPool.length]} ${point}`;
+            listEl.appendChild(li);
+        });
+    }
+
     function renderHourly(rows, listEl) {
         if (!listEl) return;
         listEl.innerHTML = '';
@@ -192,14 +219,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (window.setWeatherEffect) window.setWeatherEffect(data.weather_effect || 'clear');
             updateClock();
 
-            const c   = document.getElementById('home-ai-clothing');
-            const u   = document.getElementById('home-ai-umbrella');
-            const sc  = document.getElementById('home-ai-score');
             const tip = document.getElementById('home-ai-tip');
-            if (c)   c.textContent  = data.clothing_recommendation || '—';
-            if (u)   u.textContent  = data.umbrella_needed ? 'Yes ☂️' : 'No';
-            if (sc)  sc.textContent = `${data.suitability_score}/10`;
-            if (tip) tip.textContent = data.tip_text || '—';
+            renderAdviceList(tip, data.tip_text);
 
             const rows = data.forecast_24h || [];
             renderHourly(rows, hourlyList);
