@@ -48,7 +48,7 @@ async def get_recommendation(city: str):
 
     # 1. جلب البيانات (خطوة أولية لا بد منها)
     t_weather_start = time.time()
-    weather_data = fetch_current_weather(city)
+    weather_data = await fetch_current_weather(city)
     t_weather_end = round(time.time() - t_weather_start, 2)
 
     # 2. ML Predict (Current)
@@ -87,19 +87,19 @@ async def get_recommendation(city: str):
         res = await generate_recommendation_tip(system_prompt, user_prompt, fallback_tip)
         return res, round(time.time() - t_llm_start, 2)
 
-    # دالة وسيطة لقياس وقت الـ Loop
+    
     def timed_loop():
         res = process_24h_forecast(weather_data)
         return res, round(time.time() - t_loop_start, 2)
 
-    # تشغيل المهمتين معاً
+    
     llm_task = timed_llm()
     forecast_task = loop.run_in_executor(executor, timed_loop)
 
-    # الانتظار
+    
     (llm_output, llm_time), (hourly_forecast, loop_time) = await asyncio.gather(llm_task, forecast_task)
 
-    # 5. التقرير النهائي في التيرمينال
+    
     t_total_end = round(time.time() - t_total_start, 2)
     
     print(f"📊 [PROFILING REPORT]")

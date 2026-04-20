@@ -30,7 +30,7 @@ async def chat(req: ChatRequest):
         raise HTTPException(status_code=400, detail="Question is required")
 
     # 1. Hava verisi
-    weather_data = fetch_current_weather(city)
+    weather_data = await fetch_current_weather(city)
 
     # 2. ML feature normalize (BUG FIX: "current_raw" kullan, "raw" değil)
     features = normalize_to_model_features(

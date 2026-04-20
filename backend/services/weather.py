@@ -1,5 +1,5 @@
-import time
-import requests
+import httpx
+import asyncio
 from fastapi import HTTPException
 
 CURRENT_FIELDS = (
@@ -13,56 +13,69 @@ HOURLY_FIELDS = (
     "wind_speed_10m,cloud_cover,weather_code"
 )
 
-_session = requests.Session()
-_session.headers.update({"Accept-Encoding": "gzip"})
+# ✅ Cache للـ geocoding
+_geo_cache = {}
 
+# ✅ Client واحد مشترك بدل ما يتعمل في كل request
+_client = httpx.AsyncClient(
+    timeout=10.0,
+    headers={"Accept-Encoding": "gzip"},
+    limits=httpx.Limits(max_connections=20, max_keepalive_connections=10)
+)
 
-def _get_with_retry(url: str, params: dict, timeout: int = 8, retries: int = 3) -> dict:
+async def _get_with_retry(url: str, params: dict, retries: int = 3) -> dict:
     last_err = None
     for attempt in range(retries):
         try:
-            res = _session.get(url, params=params, timeout=timeout)
+            res = await _client.get(url, params=params)
             res.raise_for_status()
             return res.json()
-        except requests.RequestException as e:
+        except Exception as e:
             last_err = e
             if attempt < retries - 1:
-                time.sleep(0.5 * (attempt + 1))
+                await asyncio.sleep(0.5 * (attempt + 1))
     raise last_err
 
-
-def fetch_current_weather(city_name: str) -> dict:
+async def fetch_current_weather(city_name: str) -> dict:
     city_name = city_name.strip()
     if not city_name:
         raise HTTPException(status_code=400, detail="City name cannot be empty")
 
-    try:
-        geo_res = _get_with_retry(
-            "https://geocoding-api.open-meteo.com/v1/search",
-            params={"name": city_name, "count": 1, "language": "en"},
-        )
-    except requests.RequestException:
-        raise HTTPException(status_code=503, detail="Geocoding service unavailable")
+    city_key = city_name.lower()
 
-    if not geo_res.get("results"):
-        raise HTTPException(status_code=404, detail=f"City '{city_name}' not found")
+    # ✅ Geocoding مع cache
+    if city_key in _geo_cache:
+        loc = _geo_cache[city_key]
+    else:
+        try:
+            geo_res = await _get_with_retry(
+                "https://geocoding-api.open-meteo.com/v1/search",
+                params={"name": city_name, "count": 1, "language": "en"},
+            )
+        except Exception:
+            raise HTTPException(status_code=503, detail="Geocoding service unavailable")
 
-    loc = geo_res["results"][0]
+        if not geo_res.get("results"):
+            raise HTTPException(status_code=404, detail=f"City '{city_name}' not found")
+
+        loc = geo_res["results"][0]
+        _geo_cache[city_key] = loc
+
     lat, lon = loc["latitude"], loc["longitude"]
 
     try:
-        w_res = _get_with_retry(
+        w_res = await _get_with_retry(
             "https://api.open-meteo.com/v1/forecast",
             params={
-                "latitude": lat,
-                "longitude": lon,
-                "current": CURRENT_FIELDS,
-                "hourly": HOURLY_FIELDS,
+                "latitude":       lat,
+                "longitude":      lon,
+                "current":        CURRENT_FIELDS,
+                "hourly":         HOURLY_FIELDS,
                 "forecast_hours": 24,
-                "timezone": "auto",
+                "timezone":       "auto",
             },
         )
-    except requests.RequestException:
+    except Exception:
         raise HTTPException(status_code=503, detail="Weather service unavailable")
 
     if "current" not in w_res or "hourly" not in w_res:
