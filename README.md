@@ -1,6 +1,6 @@
 # WeatherWise
 
-WeatherWise is a machine-learning-powered weather advisory application built for the yaHack hackathon. It provides structured, actionable recommendations (like clothing advice, umbrella necessity, and outdoor suitability scores) and uses a local LLM to generate user-friendly, conversational advice.
+WeatherWise is a machine-learning-powered weather advisory application built for the Yandex Anadolu hackathon. It provides structured, actionable recommendations (like clothing advice, umbrella necessity, and outdoor suitability scores) and uses a local LLM to generate user-friendly, conversational advice.
 
 ## Core Features
 
@@ -87,5 +87,4 @@ python src/train_suitability.py
 - [ ] Build chatbot-based "Should I?" interaction
 - [ ] Deployment hardening
 
-**Future Scope:**
-- [ ] Mobile/iOS native application (only after core web MVP is fully stabilized)
+
