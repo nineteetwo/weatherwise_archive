@@ -28,4 +28,31 @@ Pending tasks and roadmap are tracked in [TODO.md](TODO.md).
 
 ## Getting Started
 
-*(Further setup instructions for backend, frontend, and ML training pipelines to be added.)*
+### 1. Backend Setup (API & Frontend Service)
+The backend is built with FastAPI and also serves the frontend static files.
+
+```bash
+cd backend
+python -m venv venv
+# On Windows: venv\Scripts\activate
+# On Linux/Mac: source venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env  # Configure your environment variables
+uvicorn main:app --reload --port 8000
+```
+
+### 2. Frontend Access
+Once the backend is running, the frontend is served automatically. 
+Open your browser and navigate to: `http://127.0.0.1:8000/home.html`
+*(Note: Do not open HTML files directly via `file://` as they require the API on the same origin).*
+
+### 3. ML Pipeline Setup (Optional)
+If you wish to retrain the machine learning models:
+
+```bash
+cd ml
+pip install -r requirements.txt
+python src/train_umbrella.py
+python src/train_clothing.py
+python src/train_suitability.py
+```
